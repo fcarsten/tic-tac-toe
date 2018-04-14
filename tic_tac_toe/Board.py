@@ -5,14 +5,16 @@
 import numpy as np
 from enum import Enum
 
+
 #
 # class to encode different states of the game. A game can be in progress (NOT_FINISHED), lost, won, or draw
 #
 class GameResult(Enum):
     NOT_FINISHED = 0
-    LOSE = 1
-    WIN = 2
+    NAUGHT_WIN = 1
+    CROSS_WIN = 2
     DRAW = 3
+
 
 #
 # Values to encode the current content of a field on the board. A field can be empty, contain a naught, or
@@ -30,12 +32,12 @@ CROSS = 2
 BOARD_DIM = 3  # type: int
 BOARD_SIZE = BOARD_DIM * BOARD_DIM
 
+
 #
 # The class to encode a tic-tac-toe board, including its current state of pieces.
 # Also contains various utility methods.
 #
 class Board:
-
     #
     # We will use these starting positions and directions when checking if a move resulted in the game being
     # won by one of the sides.
@@ -88,9 +90,6 @@ class Board:
     # Various pieces of code prefer one over the other.
     #
     def coord_to_pos(self, coord: (int, int)) -> int:
-        if coord is None:
-            return None
-
         return coord[0] * BOARD_DIM + coord[1]
 
     #
@@ -98,9 +97,6 @@ class Board:
     # Various pieces of code prefer one over the other.
     #
     def pos_to_coord(self, pos: int) -> (int, int):
-        if pos is None:
-            return None
-
         return pos // BOARD_DIM, pos % BOARD_DIM
 
     #
@@ -138,34 +134,33 @@ class Board:
     # Throws a ValueError if the position is not EMPTY
     # returns the new state of the board, the game result after this move, and whether this move has finished the game
     #
-    def move(self, position, side):
+    def move(self, position: int, side: int) -> (np.ndarray, GameResult, bool):
         if self.state[position] != EMPTY:
             print('Illegal move')
             raise ValueError("Invalid move")
 
         self.state[position] = side
 
-        if (self.check_win() != GameResult.NOT_FINISHED):
-            return self.state, GameResult.WIN, True
+        if self.check_win():
+            return self.state, GameResult.CROSS_WIN if side == CROSS else GameResult.NAUGHT_WIN, True
 
-        if (self.num_empty() == 0):
+        if self.num_empty() == 0:
             return self.state, GameResult.DRAW, True
 
         return self.state, GameResult.NOT_FINISHED, False
-
 
     #
     # Applies 2D direction dir to 1D position pos.
     # Returns the resulting 1D position, or -1 if the resulting position would not be a valid board position.
     #
-    def apply_dir(self, pos, dir):
+    def apply_dir(self, pos: int, direction: (int, int)) -> int:
         row = pos // 3
         col = pos % 3
-        row += dir[0]
-        if (row < 0 or row > 2):
+        row += direction[0]
+        if row < 0 or row > 2:
             return -1
-        col += dir[1]
-        if (col < 0 or col > 2):
+        col += direction[1]
+        if col < 0 or col > 2:
             return -1
 
         return row * 3 + col
@@ -173,46 +168,75 @@ class Board:
     #
     # Checks and returns whether there are 3 pieces of the same side in a row if following direction dir
     #
-    def check_win_in_dir(self, pos: int, dir) -> GameResult:
+    def check_win_in_dir(self, pos: int, direction: (int, int)) -> bool:
         c = self.state[pos]
         if c == EMPTY:
-            return GameResult.NOT_FINISHED
+            return False
 
-        p1 = int(self.apply_dir(pos, dir))
-        p2 = int(self.apply_dir(p1, dir))
+        p1 = int(self.apply_dir(pos, direction))
+        p2 = int(self.apply_dir(p1, direction))
 
         if p1 == -1 or p2 == -1:
-            return GameResult.NOT_FINISHED
+            return False
 
         if c == self.state[p1] and c == self.state[p2]:
-            return GameResult.WIN
+            return True
 
-        return GameResult.NOT_FINISHED
+        return False
 
-    def check_win(self):
+    #
+    # Returns whether any side has won the game
+    #
+    def check_win(self) -> bool:
         for start_pos in self.WIN_CHECK_DIRS:
             if self.state[start_pos] != EMPTY:
-                for dir in self.WIN_CHECK_DIRS[start_pos]:
-                    res = self.check_win_in_dir(start_pos, dir)
-                    if res != GameResult.NOT_FINISHED:
-                        return res
+                for direction in self.WIN_CHECK_DIRS[start_pos]:
+                    res = self.check_win_in_dir(start_pos, direction)
+                    if res:
+                        return True
 
-        return GameResult.NOT_FINISHED
+        return False
 
-    def state_to_char(self, pos):
+    #
+    # Return 'x', 'o', or ' ' depending on what piece is on 1D position pos
+    #
+    def state_to_char(self, pos, html=False):
         if (self.state[pos]) == EMPTY:
-            return ' '
+            return '&ensp;' if html else ' '
 
         if (self.state[pos]) == NAUGHT:
             return 'o'
 
         return 'x'
 
+
+    def html_str(self) -> str:
+        data = self.state_to_charlist(True)
+        html = '<table border="1"><tr>{}</tr></table>'.format(
+            '</tr><tr>'.join(
+                '<td>{}</td>'.format('</td><td>'.join(str(_) for _ in row)) for row in data)
+        )
+        return html
+
+    def state_to_charlist(self, html=False):
+        res = []
+        for i in range(3):
+            line = [self.state_to_char(i * 3, html) ,
+                    self.state_to_char(i * 3 + 1, html),
+                    self.state_to_char(i * 3 + 2, html)]
+            res.append(line)
+
+        return res
+
+    #
+    # Print an ASCII representation of the board
+    #
     def print_board(self):
         for i in range(3):
-            str = self.state_to_char(i * 3) + '|' + self.state_to_char(i * 3 + 1) + '|' + self.state_to_char(i * 3 + 2)
+            board_str = self.state_to_char(i * 3) + '|' + self.state_to_char(i * 3 + 1) \
+                        + '|' + self.state_to_char(i * 3 + 2)
 
-            print(str)
+            print(board_str)
             if i != 2:
                 print("-----")
 
