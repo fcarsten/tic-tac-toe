@@ -25,7 +25,7 @@ NAUGHT = 1  # type: int
 CROSS = 2   # type: int
 
 #
-# Define the length and width of the board. Has to be 3 at the moment, or parts of the code will break. Also,
+# Define the length and width of the board. Has to be 3 at the moment, or some parts of the code will break. Also,
 # the game mechanics kind of require this dimension unless other rules are changed as well. Encoding as a variable
 # to make the code more readable
 #
