@@ -9,7 +9,6 @@ from tic_tac_toe.Player import Player
 class RandomPlayer(Player):
     def __init__(self):
         self.side = None
-        self.result = GameResult.NOT_FINISHED
         super().__init__()
 
     def move(self, board: Board) -> (GameResult, bool):
@@ -17,9 +16,7 @@ class RandomPlayer(Player):
         return res, finished
 
     def final_result(self, result: GameResult):
-        self.result = result
+        pass
 
     def new_game(self, side: int):
         self.side = side
-        self.result = GameResult.NOT_FINISHED
-
