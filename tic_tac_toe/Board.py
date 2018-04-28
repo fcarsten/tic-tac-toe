@@ -209,6 +209,20 @@ class Board:
 
         return False
 
+    def who_won(self) -> int:
+        """
+        Check whether either side has won the game and return the winner
+        :return: If one player has won, that player; otherwise EMPTY
+        """
+        for start_pos in self.WIN_CHECK_DIRS:
+            if self.state[start_pos] != EMPTY:
+                for direction in self.WIN_CHECK_DIRS[start_pos]:
+                    res = self.check_win_in_dir(start_pos, direction)
+                    if res:
+                        return self.state[start_pos]
+
+        return EMPTY
+
     def check_win(self) -> bool:
         """
         Check whether either side has won the game
