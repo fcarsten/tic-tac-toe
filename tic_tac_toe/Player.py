@@ -14,7 +14,7 @@ class Player(ABC):
 
     def __init__(self):
         """
-        Nothing to do here apart from ccalling our super class
+        Nothing to do here apart from calling our super class
         """
         super().__init__()
 
