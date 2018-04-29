@@ -41,7 +41,7 @@ class MinMaxAgent(Player):
         """
         self.side = side
 
-    def final_result(self, sess, result):
+    def final_result(self, result):
         """
         Does nothing.
         :param result: The result of the game that just finished
@@ -120,7 +120,7 @@ class MinMaxAgent(Player):
         # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
         # of a draw
         #
-        max_value = self.self.DRAW_VALUE
+        max_value = self.DRAW_VALUE
         action = -1
 
         #
@@ -151,7 +151,7 @@ class MinMaxAgent(Player):
                 MinMaxAgent.cache[board_hash] = (max_value, action)
         return max_value, action
 
-    def move(self, sess, board):
+    def move(self, board):
         """
 
         Making a move according to the MinMax algorithm

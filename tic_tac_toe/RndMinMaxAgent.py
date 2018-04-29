@@ -33,7 +33,6 @@ class RndMinMaxAgent(Player):
         """
         self.side = None
         super().__init__()
-        self.side = None
 
     def new_game(self, side):
         """
@@ -42,7 +41,7 @@ class RndMinMaxAgent(Player):
         """
         self.side = side
 
-    def final_result(self, sess, result):
+    def final_result(self, result):
         """
         Does nothing.
         :param result: The result of the game that just finished
@@ -68,36 +67,33 @@ class RndMinMaxAgent(Player):
             return random.choice(self.cache[board_hash])
 
         #
-        # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
-        # of a draw
-        #
-        min_value = self.DRAW_VALUE
-        action = -1
-
-        winner = board.who_won()
-        if winner == self.side:
-            min_value = self.WIN_VALUE
-            action = -1
-        elif winner == board.other_side(self.side):
-            min_value = self.LOSS_VALUE
-            action = -1
-
-        #
         # If the game has already finished we return. Otherwise we look at possible continuations
         #
-        best_moves = {(min_value, action)}
-        for index in [i for i, e in enumerate(board.state) if board.state[i] == EMPTY]:
-            b = Board(board.state)
-            b.move(index, board.other_side(self.side))
+        winner = board.who_won()
+        if winner == self.side:
+            best_moves = {(self.WIN_VALUE, -1)}
+        elif winner == board.other_side(self.side):
+            best_moves = {(self.LOSS_VALUE, -1)}
+        else:
+            #
+            # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
+            # of a draw
+            #
+            min_value = self.DRAW_VALUE
+            action = -1
+            best_moves = {(min_value, action)}
+            for index in [i for i, e in enumerate(board.state) if board.state[i] == EMPTY]:
+                b = Board(board.state)
+                b.move(index, board.other_side(self.side))
 
-            res, _ = self._max(b)
-            if res < min_value or action == -1:
-                min_value = res
-                action = index
-                best_moves = {(min_value, action)}
-            elif res == min_value:
-                action = index
-                best_moves.add((min_value, action))
+                res, _ = self._max(b)
+                if res < min_value or action == -1:
+                    min_value = res
+                    action = index
+                    best_moves = {(min_value, action)}
+                elif res == min_value:
+                    action = index
+                    best_moves.add((min_value, action))
 
         best_moves = tuple(best_moves)
         RndMinMaxAgent.cache[board_hash] = best_moves
@@ -121,44 +117,42 @@ class RndMinMaxAgent(Player):
         if board_hash in self.cache:
             return random.choice(self.cache[board_hash])
 
-        #
-        # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
-        # of a draw
-        #
-        max_value = self.DRAW_VALUE
-        action = -1
 
         #
         # If the game has already finished we return. Otherwise we look at possible continuations
         #
         winner = board.who_won()
         if winner == self.side:
-            max_value = self.WIN_VALUE
-            action = -1
+            best_moves = {(self.WIN_VALUE, -1)}
         elif winner == board.other_side(self.side):
-            max_value = self.LOSS_VALUE
+            best_moves = {(self.LOSS_VALUE, -1)}
+        else:
+            #
+            # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
+            # of a draw
+            #
+            max_value = self.DRAW_VALUE
             action = -1
+            best_moves = {(max_value, action)}
+            for index in [i for i, e in enumerate(board.state) if board.state[i] == EMPTY]:
+                b = Board(board.state)
+                b.move(index, self.side)
 
-        best_moves = {(max_value, action)}
-        for index in [i for i, e in enumerate(board.state) if board.state[i] == EMPTY]:
-            b = Board(board.state)
-            b.move(index, self.side)
-
-            res, _ = self._min(b)
-            if res > max_value or action == -1:
-                max_value = res
-                action = index
-                best_moves = {(max_value, action)}
-            elif res == max_value:
-                action = index
-                best_moves.add((max_value, action))
+                res, _ = self._min(b)
+                if res > max_value or action == -1:
+                    max_value = res
+                    action = index
+                    best_moves = {(max_value, action)}
+                elif res == max_value:
+                    action = index
+                    best_moves.add((max_value, action))
 
         best_moves = tuple(best_moves)
         self.cache[board_hash] = best_moves
 
         return random.choice(best_moves)
 
-    def move(self, sess, board):
+    def move(self, board):
         """
 
         Making a move according to the MinMax algorithm. If more than one best move exist, chooses amongst them
