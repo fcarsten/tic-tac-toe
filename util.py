@@ -59,3 +59,5 @@ def battle(player1: Player, player2: Player, num_games: int = 100000):
 
     print("Which gives percentages of draws: {:.2%}, Player 1 wins: {:.2%}, and Player 2 wins:  {:.2%}".format(
         draw_count / num_games, cross_count / num_games, naught_count / num_games))
+
+    return cross_count, naught_count, draw_count
