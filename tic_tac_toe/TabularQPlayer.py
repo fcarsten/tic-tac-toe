@@ -14,18 +14,19 @@ LOSS_VALUE = 0.0  # type: float
 
 
 class TQPlayer(Player):
-    def __init__(self):
+    def __init__(self, alpha=0.9, gamma=0.95, q_init= 0.6):
         self.side = None
         self.q = {}  # type: Dict[int, [float]]
         self.games_history = []  # type: List[(int, int)]
-        self.learning_rate = 0.9
-        self.value_discount = 0.95
+        self.learning_rate = alpha
+        self.value_discount = gamma
+        self.q_init_val = q_init
 
     def get_q(self, board_hash: int) -> [int]:
         if board_hash in self.q:
             qvals = self.q[board_hash]
         else:
-            qvals = np.full(9, 0.6)
+            qvals = np.full(9, self.q_init_val)
             self.q[board_hash] = qvals
 
         return qvals
