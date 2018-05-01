@@ -40,7 +40,7 @@ def play_game(board: Board, player1: Player, player2: Player):
     return final_result
 
 
-def battle(player1: Player, player2: Player, num_games: int = 100000):
+def battle(player1: Player, player2: Player, num_games: int = 100000, silent : bool =False):
     board = Board()
     draw_count = 0
     cross_count = 0
@@ -54,10 +54,11 @@ def battle(player1: Player, player2: Player, num_games: int = 100000):
         else:
             draw_count += 1
 
-    print("After {} game we have draws: {}, Player 1 wins: {}, and Player 2 wins: {}.".format(num_games, draw_count,
-                                                                                         cross_count, naught_count))
+    if not silent:
+        print("After {} game we have draws: {}, Player 1 wins: {}, and Player 2 wins: {}.".format(num_games, draw_count,
+                                                                                             cross_count, naught_count))
 
-    print("Which gives percentages of draws: {:.2%}, Player 1 wins: {:.2%}, and Player 2 wins:  {:.2%}".format(
-        draw_count / num_games, cross_count / num_games, naught_count / num_games))
+        print("Which gives percentages of draws: {:.2%}, Player 1 wins: {:.2%}, and Player 2 wins:  {:.2%}".format(
+            draw_count / num_games, cross_count / num_games, naught_count / num_games))
 
     return cross_count, naught_count, draw_count
