@@ -32,7 +32,6 @@ class MinMaxAgent(Player):
         """
         self.side = None
         super().__init__()
-        self.side = None
 
     def new_game(self, side):
         """
