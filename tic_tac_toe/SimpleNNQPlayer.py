@@ -33,8 +33,8 @@ class QNetwork():
     def add_layer(self, input_tensor, output_size, regulize=None, name=None):
         input_tensor_size = input_tensor.shape[1].value
         w1 = tf.Variable(tf.truncated_normal([input_tensor_size, output_size],
-                                             stddev=0.1 / np.sqrt(float(input_tensor_size * output_size))))
-        b1 = tf.Variable(tf.zeros([1, output_size], tf.float32))
+                                             stddev=0.1 / np.sqrt(float(input_tensor_size * output_size))), name='weights')
+        b1 = tf.Variable(tf.zeros([1, output_size], tf.float32), name='bias')
 
         res = tf.matmul(input_tensor, w1) + b1
 
