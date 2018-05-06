@@ -1,10 +1,7 @@
 #
 # Copyright 2017 Carsten Friedrich (Carsten.Friedrich@gmail.com). All rights reserved
 #
-# After a short learning phase this agent plays pretty well against deterministic MinMax.
-# There are some hefty swing from always winning to always losing
-# After a while in stabilizes at 50 / 50 and then decreases steadily to less then 60 / 40
-# Then increases again to 100% draw and seems to stay there
+# Very trivial NN, but already learns ane wins more than it loses against Random Player
 #
 
 import numpy as np
@@ -14,13 +11,11 @@ from tic_tac_toe.TFSessionManager import TFSessionManager as tfsn
 from tic_tac_toe.Board import Board, BOARD_SIZE, EMPTY, CROSS, NAUGHT
 from tic_tac_toe.Player import Player, GameResult
 
-MODEL_NAME = 'tic-tac-toe-model-nna'
-MODEL_PATH = './saved_models/'
-
 WIN_VALUE = 1.0
 DRAW_VALUE = 0.6
 LOSS_VALUE = 0.0
 
+training = True
 
 
 class QNetwork():
@@ -30,7 +25,7 @@ class QNetwork():
         self.name = name
         self.input_positions = None
         self.target_input = None
-        self.logits = None
+        self.qvalues = None
         self.probabilities = None
         self.train_step = None
         self.build_graph(name)
@@ -58,12 +53,12 @@ class QNetwork():
             target = self.target_input
 
             net = self.input_positions
-            net = self.add_layer(net, BOARD_SIZE * 3 * 128, tf.nn.relu)
+            net = self.add_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
 
-            self.logits = self.add_layer(net, BOARD_SIZE, name='logits')
+            self.qvalues = self.add_layer(net, BOARD_SIZE, name='qvalues')
 
-            self.probabilities = tf.nn.softmax(self.logits, name='probabilities')
-            mse = tf.losses.mean_squared_error(predictions=self.logits, labels=target)
+            self.probabilities = tf.nn.softmax(self.qvalues, name='probabilities')
+            mse = tf.losses.mean_squared_error(predictions=self.qvalues, labels=target)
             self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse, name='train')
 
 
@@ -85,7 +80,6 @@ class NNQPlayer(Player):
         self.random_move_prob = 0.1
         self.nn = QNetwork(name)
         self.reward_discount = 0.8
-        self.training = True
         super().__init__()
 
     def new_game(self, side):
@@ -110,30 +104,30 @@ class NNQPlayer(Player):
         return targets
 
     def get_probs(self, input_pos):
-        probs, logits = tfsn.get_session().run([self.nn.probabilities, self.nn.logits],
-                                 feed_dict={self.nn.input_positions: [input_pos]})
-        return probs[0], logits[0]
+        probs, qvalues = tfsn.get_session().run([self.nn.probabilities, self.nn.qvalues],
+                                               feed_dict={self.nn.input_positions: [input_pos]})
+        return probs[0], qvalues[0]
 
     def move(self, board):
         self.board_position_log.append(board.state.copy())
         nn_input = self.board_state_to_nn_input(board.state)
 
-        probs, logits = self.get_probs(nn_input)
+        probs, qvalues = self.get_probs(nn_input)
 
-        logits = np.copy(logits)
+        qvalues = np.copy(qvalues)
 
         for index, p in enumerate(probs):
             if not board.is_legal(index):
                 probs[index] = 0
-                logits[index] = 0
+                qvalues[index] = 0
 
         if len(self.action_log) > 0:
-            self.next_max_log.append(np.max(logits))
+            self.next_max_log.append(np.max(qvalues))
 
-        self.values_log.append(np.copy(logits))
+        self.values_log.append(np.copy(qvalues))
 
         probs = [p / sum(probs) for p in probs]
-        if self.training and np.random.rand(1) < self.random_move_prob:
+        if training is True and np.random.rand(1) < self.random_move_prob:
             move = np.random.choice(BOARD_SIZE, p=probs)
         else:
             move = np.argmax(probs)
@@ -162,9 +156,16 @@ class NNQPlayer(Player):
         if self.training:
             targets = self.calculate_targets()
             nn_input = [self.board_state_to_nn_input(x) for x in self.board_position_log]
+            tfsn.get_session().run([self.nn.train_step],
+                                   feed_dict={self.nn.input_positions: nn_input, self.nn.target_input: targets})
+
+        # if training:
+        #     targets = self.calculate_targets()
+        #
+        #
             # for target, current_board, old_probs, old_action in zip(targets, self.board_position_log,
             #                                                         self.values_log, self.action_log):
             #     nn_input = self.board_state_to_nn_input(current_board)
-
-            tfsn.get_session().run([self.nn.train_step],
-                     feed_dict={self.nn.input_positions: nn_input, self.nn.target_input: targets})
+            #
+            #     tfsn.get_session().run([self.nn.train_step],
+            #              feed_dict={self.nn.input_positions: [nn_input], self.nn.target_input: [target]})
