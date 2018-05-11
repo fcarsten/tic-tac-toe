@@ -77,6 +77,7 @@ class NNQPlayer(Player):
         self.next_max_log = []
         self.values_log = []
         self.name = name
+        self.random_move_prob = 0.1
         self.nn = QNetwork(name)
         self.reward_discount = 0.99
         super().__init__()
@@ -123,7 +124,11 @@ class NNQPlayer(Player):
 
         self.values_log.append(np.copy(qvalues))
 
-        move = np.argmax(probs)
+        probs = [p / sum(probs) for p in probs]
+        if training is True and np.random.rand(1) < self.random_move_prob:
+            move = np.random.choice(BOARD_SIZE, p=probs)
+        else:
+            move = np.argmax(probs)
 
         _, res, finished = board.move(move, self.side)
 
@@ -144,6 +149,7 @@ class NNQPlayer(Player):
             raise ValueError("Unexpected game result {}".format(result))
 
         self.next_max_log.append(reward)
+        self.random_move_prob = 0.95 * self.random_move_prob
 
         if self.training:
             targets = self.calculate_targets()
