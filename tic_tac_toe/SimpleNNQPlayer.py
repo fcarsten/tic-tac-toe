@@ -11,55 +11,51 @@ from tic_tac_toe.TFSessionManager import TFSessionManager as tfsn
 from tic_tac_toe.Board import Board, BOARD_SIZE, EMPTY, CROSS, NAUGHT
 from tic_tac_toe.Player import Player, GameResult
 
-WIN_VALUE = 1.0
-DRAW_VALUE = 0.5
-LOSS_VALUE = -1.0
 
-training = True
+class QNetwork:
 
-
-class QNetwork():
-
-    def __init__(self, name):
-        self.learningRate = 0.1
+    def __init__(self, name, learning_rate):
+        self.learningRate = learning_rate
         self.name = name
         self.input_positions = None
         self.target_input = None
-        self.qvalues = None
+        self.q_values = None
         self.probabilities = None
         self.train_step = None
         self.build_graph(name)
 
-    def add_layer(self, input_tensor, output_size, regulize=None, name=None):
+    def add_dense_layer(self, input_tensor, output_size, activation_fn=None, name=None):
         input_tensor_size = input_tensor.shape[1].value
-        w1 = tf.Variable(tf.truncated_normal([input_tensor_size, output_size],
-                                             stddev=0.1 / np.sqrt(float(input_tensor_size * output_size))), name='weights')
-        b1 = tf.Variable(tf.zeros([1, output_size], tf.float32), name='bias')
 
-        res = tf.matmul(input_tensor, w1) + b1
+        weights = tf.Variable(tf.zeros([input_tensor_size, output_size], tf.float32), name='weights')
+        bias = tf.Variable(tf.zeros([1, output_size], tf.float32), name='bias')
+        layer = tf.matmul(input_tensor, weights) + bias
 
-        if regulize is not None:
-            res = regulize(res)
+        if activation_fn is not None:
+            layer = activation_fn(layer)
 
         if name is not None:
-            res = tf.identity(res, name)
+            layer = tf.identity(layer, name)
 
-        return res
+        return layer
 
     def build_graph(self, name):
         with tf.variable_scope(name):
             self.input_positions = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
-            self.target_input = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE), name='train_inputs')
+
+            self.target_input = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE), name='targets')
             target = self.target_input
 
             net = self.input_positions
-            net = self.add_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
 
-            self.qvalues = self.add_layer(net, BOARD_SIZE, name='qvalues')
+            net = self.add_dense_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
 
-            self.probabilities = tf.nn.softmax(self.qvalues, name='probabilities')
-            mse = tf.losses.mean_squared_error(predictions=self.qvalues, labels=target)
-            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse, name='train')
+            self.q_values = self.add_dense_layer(net, BOARD_SIZE, name='q_values')
+
+            self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
+            mse = tf.losses.mean_squared_error(predictions=self.q_values, labels=target)
+            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse,
+                                                                                                          name='train')
 
 
 class NNQPlayer(Player):
@@ -70,15 +66,20 @@ class NNQPlayer(Player):
                         (state == EMPTY).astype(int)])
         return res.reshape(-1)
 
-    def __init__(self, name):
+    def __init__(self, name, reward_discount=0.95, win_value=1.0, draw_value=0.0,
+                 loss_value=-1.0, learning_rate=0.01, training=True):
+        self.reward_discount = reward_discount
+        self.win_value = win_value
+        self.draw_value = draw_value
+        self.loss_value = loss_value
         self.side = None
         self.board_position_log = []
         self.action_log = []
         self.next_max_log = []
         self.values_log = []
         self.name = name
-        self.nn = QNetwork(name)
-        self.reward_discount = 0.99
+        self.nn = QNetwork(name, learning_rate)
+        self.training = training
         super().__init__()
 
     def new_game(self, side):
@@ -101,8 +102,8 @@ class NNQPlayer(Player):
         return targets
 
     def get_probs(self, input_pos):
-        probs, qvalues = tfsn.get_session().run([self.nn.probabilities, self.nn.qvalues],
-                                               feed_dict={self.nn.input_positions: [input_pos]})
+        probs, qvalues = tfsn.get_session().run([self.nn.probabilities, self.nn.q_values],
+                                                feed_dict={self.nn.input_positions: [input_pos]})
         return probs[0], qvalues[0]
 
     def move(self, board):
@@ -113,17 +114,17 @@ class NNQPlayer(Player):
 
         qvalues = np.copy(qvalues)
 
-        for index, p in enumerate(probs):
+        for index, p in enumerate(qvalues):
             if not board.is_legal(index):
-                probs[index] = 0
-                qvalues[index] = LOSS_VALUE
-
-        if len(self.action_log) > 0:
-            self.next_max_log.append(np.max(qvalues))
-
-        self.values_log.append(np.copy(qvalues))
+                probs[index]=-1
+                # qvalues[index] = min(self.loss_value, self.draw_value, self.win_value)-1
 
         move = np.argmax(probs)
+
+        if len(self.action_log) > 0:
+            self.next_max_log.append(qvalues[move])
+
+        self.values_log.append(qvalues)
 
         _, res, finished = board.move(move, self.side)
 
@@ -134,12 +135,12 @@ class NNQPlayer(Player):
     def final_result(self, result):
         if (result == GameResult.NAUGHT_WIN and self.side == NAUGHT) or (
                 result == GameResult.CROSS_WIN and self.side == CROSS):
-            reward = WIN_VALUE  # type: float
+            reward = self.win_value  # type: float
         elif (result == GameResult.NAUGHT_WIN and self.side == CROSS) or (
                 result == GameResult.CROSS_WIN and self.side == NAUGHT):
-            reward = LOSS_VALUE  # type: float
+            reward = self.loss_value  # type: float
         elif result == GameResult.DRAW:
-            reward = DRAW_VALUE  # type: float
+            reward = self.draw_value  # type: float
         else:
             raise ValueError("Unexpected game result {}".format(result))
 
