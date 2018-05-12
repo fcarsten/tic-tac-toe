@@ -281,6 +281,22 @@ class Board:
 
         return res
 
+    def __str__(self) -> str:
+        """
+        Return ASCII representation of the board
+        :return: ASCII representation of the board
+        """
+        board_str = ""
+        for i in range(3):
+            board_str += self.state_to_char(i * 3) + '|' + self.state_to_char(i * 3 + 1) \
+                        + '|' + self.state_to_char(i * 3 + 2) + "\n"
+
+            if i != 2:
+                board_str += "-----\n"
+
+        board_str += "\n"
+        return board_str
+
     def print_board(self):
         """
         Print an ASCII representation of the board
