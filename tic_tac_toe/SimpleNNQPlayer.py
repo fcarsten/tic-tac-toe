@@ -41,18 +41,16 @@ class QNetwork:
         :param activation_fn: The activation function for the new layer, or None if no activation function
         should be used
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
-        :return:
+        :return: A new dense layer attached to the `input_tensor`
         """
         return tf.layers.dense(input_tensor, output_size, activation=activation_fn,
                                kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
-                               kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
                                name=name)
 
     def build_graph(self, name: str):
         """
         Builds a new TensorFlow graph with scope `name`
         :param name: The scope for the graph. Needs to be unique for the session.
-        :return: The new TensorFlow graph
         """
         with tf.variable_scope(name):
             self.input_positions = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
