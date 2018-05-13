@@ -5,35 +5,70 @@ from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
 from tic_tac_toe.RndMinMaxAgent import RndMinMaxAgent
 from tic_tac_toe.TabularQPlayer import TQPlayer
-from tic_tac_toe.NeuralNetworkQPlayer import NNQPlayer
+from tic_tac_toe.SimpleNNQPlayer import NNQPlayer
+from tic_tac_toe.SimpleDeepNNQPlayer import DeepNNQPlayer
 from tic_tac_toe.TFSessionManager import TFSessionManager
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
 board = Board()
-player2 = NNQPlayer("QLearner1")
-player1 = RandomPlayer()
+nnplayer = NNQPlayer("QLearner1")
+nnplayer2 = NNQPlayer("QLearner2")
+
+deep_nnplayer = NNQPlayer("DeepQLearner1")
+
+
+rndplayer = RandomPlayer()
+mm_player = MinMaxAgent()
+tq_player = TQPlayer()
 
 p1_wins = []
 p2_wins = []
 draws = []
-count = []
-num_battles = 100
-games_per_battle = 1000
+game_number = []
+game_counter = 0
 
-TFSessionManager.set_session(tf.InteractiveSession())
+num_battles = 10
+games_per_battle = 100
+num_training_battles = 1000
+
+TFSessionManager.set_session(tf.Session())
 
 TFSessionManager.get_session().run(tf.global_variables_initializer())
+writer = tf.summary.FileWriter('log', TFSessionManager.get_session().graph)
 
-for i in range(num_battles):
-    p1win, p2win, draw = battle(player1, player2, games_per_battle, False)
+# nnplayer rndplayer mm_player
+p1_t = deep_nnplayer
+p2_t = mm_player
+
+p1 = p1_t
+p2 = p2_t
+
+# nnplayer.training= False
+# nnplayer2.training= False
+
+for i in range (num_training_battles):
+    p1win, p2win, draw = battle(p1_t, p2_t, games_per_battle, False)
     p1_wins.append(p1win)
     p2_wins.append(p2win)
     draws.append(draw)
-    count.append(i*games_per_battle)
+    game_counter=game_counter+1
+    game_number.append(game_counter)
 
+# nnplayer.training= False
+# nnplayer2.training= False
+
+for i in range(num_battles):
+    p1win, p2win, draw = battle(p1, p2,  games_per_battle, False)
+    p1_wins.append(p1win)
+    p2_wins.append(p2win)
+    draws.append(draw)
+    game_counter=game_counter+1
+    game_number.append(game_counter)
+
+writer.close()
 TFSessionManager.set_session(None)
 
-p = plt.plot(count, draws, 'r-', count, p1_wins, 'g-', count, p2_wins, 'b-')
+p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 
 plt.show()
