@@ -177,7 +177,9 @@ class EGreedyNNQPlayer(Player):
         # anyway.
         for index, p in enumerate(qvalues):
             if not board.is_legal(index):
-                probs[index] = 0
+                probs[index] = -1
+            elif probs[index]<0:
+                probs[index]= 0.0
 
         # Most of the time our next move is the one with the highest probability after removing all illegal ones.
         # Occasionally, however we randomly chose a random move to encourage exploration
