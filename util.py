@@ -62,3 +62,21 @@ def battle(player1: Player, player2: Player, num_games: int = 100000, silent : b
             draw_count / num_games, cross_count / num_games, naught_count / num_games))
 
     return cross_count, naught_count, draw_count
+
+def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100):
+    p1_wins = []
+    p2_wins = []
+    draws = []
+    game_number = []
+    game_counter = 0
+
+
+    for i in range(num_battles):
+        p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
+        p1_wins.append(p1win)
+        p2_wins.append(p2win)
+        draws.append(draw)
+        game_counter = game_counter + 1
+        game_number.append(game_counter)
+
+    return game_number, p1_wins, p2_wins, draws

@@ -1,29 +1,8 @@
-from util import battle
-from tic_tac_toe.Player import Player
-from tic_tac_toe.TFSessionManager import TFSessionManager
 import tensorflow as tf
-
-
-def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100):
-    p1_wins = []
-    p2_wins = []
-    draws = []
-    game_number = []
-    game_counter = 0
-
-
-    for i in range(num_battles):
-        p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
-        p1_wins.append(p1win)
-        p2_wins.append(p2win)
-        draws.append(draw)
-        game_counter = game_counter + 1
-        game_number.append(game_counter)
-
-    return game_number, p1_wins, p2_wins, draws
-
-
 import matplotlib.pyplot as plt
+
+from util import evaluate_players
+from tic_tac_toe.TFSessionManager import TFSessionManager
 from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.EGreedyNNQPlayer import EGreedyNNQPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
