@@ -188,10 +188,10 @@ class EGreedyNNQPlayer(Player):
         else:
             move = np.argmax(probs)
 
-        # Unless this is the very first move, the Q values of the selected move is also the max Q value of
+        # Unless this is the very first move, the max Q value of this state is also the max Q value of
         # the move that got the game from the previous state to this one.
         if len(self.action_log) > 0:
-            self.next_max_log.append(qvalues[move])
+            self.next_max_log.append(qvalues[np.argmax(probs)])
 
         # We record the action we selected as well as the Q values of the current state for later use when
         # adjusting NN weights.
