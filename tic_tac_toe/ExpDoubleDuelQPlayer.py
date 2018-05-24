@@ -5,7 +5,7 @@
 #
 
 import numpy as np
-from random import random
+import random
 import tensorflow as tf
 from tic_tac_toe.TFSessionManager import TFSessionManager as TFSN
 
@@ -33,17 +33,20 @@ class QNetwork:
         self.target_q = None
         self.actions = None
 
+        # Internal tensors
         self.actions_onehot = None
         self.value = None
         self.advantage = None
 
-        self.q_values = None
-        self.probabilities = None
-        self.train_step = None
-
         self.td_error = None
         self.q = None
         self.loss = None
+
+        # Externally useful tensors
+
+        self.q_values = None
+        self.probabilities = None
+        self.train_step = None
 
         self.build_graph(name)
 
@@ -78,11 +81,13 @@ class QNetwork:
             self.value = self.add_dense_layer(net, 1, name='value')
             self.advantage = self.add_dense_layer(net, BOARD_SIZE, name='advantage')
 
-            self.q_values = self.value + tf.subtract(self.advantage, tf.reduce_mean(self.advantage, axis=1, keep_dims=True))
-            self.predict = tf.argmax(self.q_values)
+            self.q_values = self.value + tf.subtract(self.advantage,
+                                                     tf.reduce_mean(self.advantage, axis=1, keep_dims=True))
+
+            # self.predict = tf.argmax(self.q_values)
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
 
-            self.actions = tf.placeholder(shape=[None], dtype=tf.int32)
+            self.actions = tf.placeholder(shape=[None], dtype=tf.int32, name='actions')
             self.actions_onehot = tf.one_hot(self.actions, BOARD_SIZE, dtype=tf.float32)
             self.q = tf.reduce_sum(tf.multiply(self.q_values, self.actions_onehot), axis=1)
 
@@ -93,19 +98,19 @@ class QNetwork:
                                                                                                           name='train')
 
 
-class ReplayBuffer():
-    def __init__(self, bufferSize = 10000):
+class ReplayBuffer:
+    def __init__(self, buffer_size=10000):
         self.buffer = []
-        self.buffer_size = bufferSize
+        self.buffer_size = buffer_size
 
     def add(self, experience):
         if len(self.buffer) + len(experience) >= self.buffer_size:
-            self.buffer[0:(len(experience) + len(self.buffer)) - self.buffer_size] = []
-        self.buffer.extend(experience)
+            self.buffer[0:1] = []
+        self.buffer.append(experience)
 
     def sample(self, size):
-        size = min(len(self.buffer, size))
-        return np.reshape(np.array(random.sample(self.buffer, size)), [size, 4])
+        size = min(len(self.buffer), size)
+        return np.array(random.sample(self.buffer, size))
 
 
 class ExpDoubleDuelQPlayer(Player):
@@ -127,7 +132,7 @@ class ExpDoubleDuelQPlayer(Player):
                         (state == EMPTY).astype(int)])
         return res.reshape(-1)
 
-    def createGraphCopyOp(self, src : str, target: str, tau: float):
+    def create_graph_copy_op(self, src: str, target: str, tau: float):
         src_vars = tf.trainable_variables(src)
         target_vars = tf.trainable_variables(target)
 
@@ -139,7 +144,8 @@ class ExpDoubleDuelQPlayer(Player):
 
     def __init__(self, name: str, reward_discount: float = 0.95, win_value: float = 1.0, draw_value: float = 0.0,
                  loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True,
-                 random_move_prob: float=0.95, random_move_decrease: float= 0.95, batch_size = 100):
+                 random_move_prob: float = 0.95, random_move_decrease: float = 0.95, batch_size=10,
+                 pre_training_games: int = 100, tau: float = 0.001):
         """
         Constructor for the Neural Network player.
         :param name: The name of the player. Also the name of its TensorFlow scope. Needs to be unique
@@ -153,7 +159,7 @@ class ExpDoubleDuelQPlayer(Player):
         :param random_move_prob: Initial probability of making a random move
         :param random_move_decrease: Factor by which to decrease of probability of random moves after a game
         """
-
+        self.tau = tau
         self.batch_size = batch_size
         self.reward_discount = reward_discount
         self.win_value = win_value
@@ -162,17 +168,21 @@ class ExpDoubleDuelQPlayer(Player):
         self.side = None
         self.board_position_log = []
         self.action_log = []
+        self.next_state_log = []
 
         self.name = name
-        self.q_net = QNetwork(name+'_main', learning_rate)
-        self.target_net = QNetwork(name+'_target', learning_rate)
+        self.q_net = QNetwork(name + '_main', learning_rate)
+        self.target_net = QNetwork(name + '_target', learning_rate)
 
-        self.graph_copy_op = self.createGraphCopyOp(name+'_main', name+'_target')
+        self.graph_copy_op = self.create_graph_copy_op(name + '_main', name + '_target', self.tau)
         self.training = training
-        self.random_move_prob=random_move_prob
-        self.random_move_decrease=random_move_decrease
+        self.random_move_prob = random_move_prob
+        self.random_move_decrease = random_move_decrease
 
         self.replay_buffer = ReplayBuffer()
+
+        self.game_counter = 0;
+        self.pre_training_games = pre_training_games
 
         super().__init__()
 
@@ -188,21 +198,41 @@ class ExpDoubleDuelQPlayer(Player):
     def add_game_to_replay_buffer(self, reward: float):
         game_length = len(self.action_log)
 
-        for i in range(game_length-1):
-            self.replay_buffer.add( [self.board_position_log[i], self.action_log[i], self.board_position_log[i+1], 0])
+        for i in range(game_length - 1):
+            self.replay_buffer.add([self.board_position_log[i], self.action_log[i],
+                                    self.board_position_log[i + 1], 0])
 
-        self.replay_buffer.add([self.board_position_log[game_length],self.action_log[game_length],None,reward])
+        self.replay_buffer.add([self.board_position_log[game_length - 1], self.action_log[game_length - 1],
+                                None, reward])
 
-    def get_probs(self, input_pos: np.ndarray) -> ([float], [float]):
+    def get_probs(self, input_pos: [np.ndarray], network: tf.Tensor) -> ([float], [float]):
         """
         Feeds the feature vector `input_pos` which encodes a board state into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).
+        :param network: The network to get probabilities from
         :param input_pos: The feature vector to be fed into the Neural Network.
         :return: A tuple of probabilities and q values of all actions (including illegal ones).
         """
-        probs, qvalues = TFSN.get_session().run([self.q_net.probabilities, self.q_net.q_values],
-                                                feed_dict={self.q_net.input_positions: [input_pos]})
-        return probs[0], qvalues[0]
+        probs, qvalues = TFSN.get_session().run([network.probabilities, network.q_values],
+                                                feed_dict={network.input_positions: input_pos})
+        return probs, qvalues
+
+    def get_valid_probs(self, input_pos: [np.ndarray], network: tf.Tensor, boards: [Board]) -> ([float], [float]):
+        probabilities, qvals = self.get_probs(input_pos, network)
+        qvals = np.copy(qvals)
+        probabilities = np.copy(probabilities)
+
+        # We filter out all illegal moves by setting the probability to 0. We don't change the q values
+        # as we don't want the NN to waste any effort of learning different Q values for moves that are illegal
+        # anyway.
+        for q, prob, b in zip(qvals, probabilities, boards):
+            for index, p in enumerate(q):
+                if not b.is_legal(index):
+                    prob[index] = -1
+                elif prob[index] < 0:
+                    prob[index] = 0.0
+
+        return probabilities, qvals
 
     def move(self, board: Board) -> (GameResult, bool):
         """
@@ -216,17 +246,9 @@ class ExpDoubleDuelQPlayer(Player):
         self.board_position_log.append(board.state.copy())
 
         nn_input = self.board_state_to_nn_input(board.state)
-        probs, qvalues = self.get_probs(nn_input)
-        qvalues = np.copy(qvalues)
-
-        # We filter out all illegal moves by setting the probability to 0. We don't change the q values
-        # as we don't want the NN to waste any effort of learning different Q values for moves that are illegal
-        # anyway.
-        for index, p in enumerate(qvalues):
-            if not board.is_legal(index):
-                probs[index] = -1
-            elif probs[index]<0:
-                probs[index]= 0.0
+        probs, qvalues = self.get_valid_probs([nn_input], self.q_net, [board])
+        probs = probs[0]
+        qvalues = qvalues[0]
 
         # Most of the time our next move is the one with the highest probability after removing all illegal ones.
         # Occasionally, however we randomly chose a random move to encourage exploration
@@ -235,15 +257,9 @@ class ExpDoubleDuelQPlayer(Player):
         else:
             move = np.argmax(probs)
 
-        # Unless this is the very first move, the Q values of the selected move is also the max Q value of
-        # the move that got the game from the previous state to this one.
-        if len(self.action_log) > 0:
-            self.next_max_log.append(qvalues[move])
-
         # We record the action we selected as well as the Q values of the current state for later use when
         # adjusting NN weights.
         self.action_log.append(move)
-        self.values_log.append(qvalues)
 
         # We execute the move and return the result
         _, res, finished = board.move(move, self.side)
@@ -255,6 +271,8 @@ class ExpDoubleDuelQPlayer(Player):
         the Neural Network.
         :param result: The result of the game that just finished.
         """
+
+        self.game_counter += 1
 
         # Compute the final reward based on the game outcome
         if (result == GameResult.NAUGHT_WIN and self.side == NAUGHT) or (
@@ -271,22 +289,44 @@ class ExpDoubleDuelQPlayer(Player):
         self.add_game_to_replay_buffer(reward)
 
         # If we are in training mode we run the optimizer.
-        if self.training:
-
+        if self.training and (self.game_counter > self.pre_training_games):
             train_batch = self.replay_buffer.sample(self.batch_size)
 
-            q1 = TFSN.get_session().run(self.q_net.predict,
-                                        feed_dict={self.q_net.input_positions: np.vstack(train_batch[])})
-            # We calculate our new estimate of what the true Q values are and feed that into the network as
-            # learning target
+            #
+            # Let's compute the target q values for all non terminal move
+            # We extract the resulting state, run it through the target net work and
+            # get the maximum q value (of all valid moves)
+            next_states = [s[2] for s in train_batch if s[2] is not None]
+            target_qs = []
 
-            targets = self.calculate_targets()
+            if len(next_states) > 0:
+                probs, qvals = self.get_valid_probs([self.board_state_to_nn_input(s) for s in next_states],
+                                                    self.target_net, [Board(s) for s in next_states])
+
+                i = 0
+                for t in train_batch:
+                    if t[2] is not None:
+                        max_move = np.argmax(probs[i])
+                        max_qval = qvals[i][max_move]
+                        target_qs.append(max_qval * self.reward_discount)
+                        i += 1
+                    else:
+                        target_qs.append(t[3])
+
+                if i != len(next_states):
+                    print("Something wrong here!!!")
+            else:
+                target_qs.extend(train_batch[:,3])
 
             # We convert the input states we have recorded to feature vectors to feed into the training.
-            nn_input = [self.board_state_to_nn_input(x) for x in self.board_position_log]
-
+            nn_input = [self.board_state_to_nn_input(x[0]) for x in train_batch]
+            actions = train_batch[:,1]
             # We run the training step with the recorded inputs and new Q value targets.
-            TFSN.get_session().run([self.nn.train_step],
-                                   feed_dict={self.nn.input_positions: nn_input, self.nn.target_input: targets})
+            TFSN.get_session().run([self.q_net.train_step],
+                                   feed_dict={self.q_net.input_positions: nn_input,
+                                              self.q_net.target_q: target_qs,
+                                              self.q_net.actions: actions})
+
+            TFSN.get_session().run(self.graph_copy_op)
 
             self.random_move_prob *= self.random_move_decrease

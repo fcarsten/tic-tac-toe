@@ -6,11 +6,11 @@ from tic_tac_toe.TFSessionManager import TFSessionManager
 from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.EGreedyNNQPlayer import EGreedyNNQPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
-
+from tic_tac_toe.ExpDoubleDuelQPlayer import ExpDoubleDuelQPlayer
 tf.reset_default_graph()
 
-nnplayer = EGreedyNNQPlayer("QLearner1", win_value=100.0, loss_value=-100.0)
-nn2player = EGreedyNNQPlayer("QLearner2", win_value=100.0, loss_value=-100.0)
+nnplayer = ExpDoubleDuelQPlayer("QLearner1") #, win_value=100.0, loss_value=-100.0)
+# nn2player = EGreedyNNQPlayer("QLearner2", win_value=100.0, loss_value=-100.0)
 # nnplayer = EGreedyNNQPlayer("QLearner1")#, learning_rate=0.001, win_value=10.0, loss_value=-10.0)
 # nn2player = EGreedyNNQPlayer("QLearner2")#, learning_rate=0.001, win_value=10.0, loss_value=-10.0)
 mm_player = MinMaxAgent()
@@ -21,9 +21,9 @@ TFSessionManager.get_session().run(tf.global_variables_initializer())
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer) #, num_battles = 20)
-game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, nn2player, num_battles=100)  # , num_battles = 20)
+game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer, num_battles=100)  # , num_battles = 20)
 
-game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
+# game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
 
 p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 
