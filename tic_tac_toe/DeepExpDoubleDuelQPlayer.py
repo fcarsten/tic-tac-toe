@@ -7,9 +7,8 @@
 import numpy as np
 import random
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
-from tic_tac_toe.TFSessionManager import TFSessionManager as TFSN
 
+from tic_tac_toe.TFSessionManager import TFSessionManager as TFSN
 from tic_tac_toe.Board import Board, BOARD_SIZE, EMPTY, CROSS, NAUGHT
 from tic_tac_toe.Player import Player, GameResult
 
@@ -74,14 +73,17 @@ class QNetwork:
         with tf.variable_scope(name):
             self.input_positions = tf.placeholder(tf.float32, shape=(None, 3, 3, 3), name='inputs')
             self.target_q = tf.placeholder(shape=[None], dtype=tf.float32, name='target')
+            net = self.input_positions
 
-            net = tf.transpose(self.input_positions, [0,3,1,2])
+            # net = tf.transpose(net, [0,3,1,2])
 
-            net = slim.conv2d(inputs=net, num_outputs=32, kernel_size=2, stride=1, data_format= "NHWC", padding='SAME')
+            net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=2,
+                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
 
-            net = slim.conv2d(inputs=net, num_outputs=32, kernel_size=2, stride=1, data_format= "NHWC", padding='SAME')
+            net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=2,
+                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
 
-            net = slim.flatten(net)
+            net = tf.layers.flatten(net)
 
             net = self.add_dense_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
 
@@ -136,7 +138,14 @@ class DeepExpDoubleDuelQPlayer(Player):
         res = np.array([(state == self.side).astype(int),
                         (state == Board.other_side(self.side)).astype(int),
                         (state == EMPTY).astype(int)])
-        return res.reshape(3,3,3)
+        res = res.reshape(3,3,3)
+        res = np.transpose(res, [1,2,0])
+
+        # s4 = res[:,:,0]
+        # s5 = res[:,:,1]
+        # s6 = res[:,:,2]
+
+        return res
 
     def create_graph_copy_op(self, src: str, target: str, tau: float):
         src_vars = tf.trainable_variables(src)
@@ -260,11 +269,6 @@ class DeepExpDoubleDuelQPlayer(Player):
         self.board_position_log.append(board.state.copy())
 
         nn_input = self.board_state_to_nn_input(board.state)
-
-        s1 = nn_input[:,:,0]
-        s2 = nn_input[0,:,:]
-        s3 = nn_input[1,:,:]
-        s4 = nn_input[2,:,:]
 
         probs, _ = self.get_valid_probs([nn_input], self.q_net, [board])
         probs = probs[0]
