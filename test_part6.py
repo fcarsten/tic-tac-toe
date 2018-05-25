@@ -24,7 +24,7 @@ TFSessionManager.get_session().run(tf.global_variables_initializer())
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer) #, num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players( mm_player, nnplayer, num_battles=300)  # , num_battles = 20)
-game_number, p1_wins, p2_wins, draws = evaluate_players( nnplayer, rndplayer, num_battles=300)  # , num_battles = 20)
+game_number, p1_wins, p2_wins, draws = evaluate_players(rm_player, nnplayer, num_battles=300)  # , num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer, num_battles=100)  # , num_battles = 20)
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
