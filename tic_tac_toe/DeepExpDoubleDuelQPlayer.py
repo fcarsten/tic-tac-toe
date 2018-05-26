@@ -77,11 +77,19 @@ class QNetwork:
 
             # net = tf.transpose(net, [0,3,1,2])
 
-            net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=2,
+            net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
                                    data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
-
-            net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=2,
+            net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
                                    data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+            net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
+                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+            # net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
+            #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+            # net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=3,
+            #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+            #
+            # net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=2,
+            #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
 
             net = tf.layers.flatten(net)
 
@@ -158,8 +166,8 @@ class DeepExpDoubleDuelQPlayer(Player):
         return op_holder
 
     def __init__(self, name: str, reward_discount: float = 0.95, win_value: float = 1.0, draw_value: float = 0.0,
-                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True,
-                 random_move_prob: float = 0.95, random_move_decrease: float = 0.95, batch_size=50,
+                 loss_value: float = -1.0, learning_rate: float = 0.1, training: bool = True,
+                 random_move_prob: float = 0.95, random_move_decrease: float = 0.95, batch_size=200,
                  pre_training_games: int = 500, tau: float = 0.001):
         """
         Constructor for the Neural Network player.
