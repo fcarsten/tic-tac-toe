@@ -6,5 +6,5 @@ from tic_tac_toe.RndMinMaxAgent import RndMinMaxAgent
 # battle(RandomPlayer(), RndMinMaxAgent())
 import tensorflow as tf
 from tensorboard import main as tb
-tf.flags.FLAGS.logdir = "./log"
+tf.flags.FLAGS.logdir = "./graphs"
 tb.main()

@@ -7,7 +7,7 @@ from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.EGreedyNNQPlayer import EGreedyNNQPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
 from tic_tac_toe.RndMinMaxAgent import RndMinMaxAgent
-from tic_tac_toe.DeepExpDoubleDuelQPlayer import DeepExpDoubleDuelQPlayer
+from tic_tac_toe.DeepExpDoubleDuelQPlayer2 import DeepExpDoubleDuelQPlayer
 tf.reset_default_graph()
 
 nnplayer = DeepExpDoubleDuelQPlayer("QLearner1") #, win_value=100.0, loss_value=-100.0)
@@ -19,15 +19,19 @@ rndplayer = RandomPlayer()
 rm_player = RndMinMaxAgent()
 
 TFSessionManager.set_session(tf.Session())
-TFSessionManager.get_session().run(tf.global_variables_initializer())
+
+sess = TFSessionManager.get_session()
+writer = tf.summary.FileWriter('./graphs', sess.graph)
+sess.run(tf.global_variables_initializer())
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer) #, num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players( mm_player, nnplayer, num_battles=300)  # , num_battles = 20)
-game_number, p1_wins, p2_wins, draws = evaluate_players(rm_player, nnplayer, num_battles=300)  # , num_battles = 20)
+game_number, p1_wins, p2_wins, draws = evaluate_players(rm_player, nnplayer, num_battles=100)  # , num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer, num_battles=100)  # , num_battles = 20)
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
+writer.close()
 
 p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 
