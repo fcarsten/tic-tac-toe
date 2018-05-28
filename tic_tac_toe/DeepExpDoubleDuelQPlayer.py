@@ -41,12 +41,18 @@ class QNetwork:
         self.td_error = None
         self.q = None
         self.loss = None
+        self.total_loss = None
+        self.reg_losses = None
 
         # Externally useful tensors
 
         self.q_values = None
         self.probabilities = None
         self.train_step = None
+
+        # For TensorBoard
+
+        self.merge = None
 
         self.build_graph(name)
 
@@ -63,6 +69,7 @@ class QNetwork:
         """
         return tf.layers.dense(input_tensor, output_size, activation=activation_fn,
                                kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
+                               kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
                                name=name)
 
     def build_graph(self, name: str):
@@ -77,12 +84,15 @@ class QNetwork:
 
             # net = tf.transpose(net, [0,3,1,2])
 
+            net = tf.layers.conv2d(inputs=net, filters=128, kernel_size=3,
+                                   kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu)
+            net = tf.layers.conv2d(inputs=net, filters=128, kernel_size=3,
+                                   kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu)
             net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
-                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
-            net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
-                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
-            net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
-                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+                                   kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu)
             # net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
             #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
             # net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=3,
@@ -95,23 +105,37 @@ class QNetwork:
 
             net = self.add_dense_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
 
-            self.value = self.add_dense_layer(net, 1, name='value')
-            self.advantage = self.add_dense_layer(net, BOARD_SIZE, name='advantage')
+            self.value = self.add_dense_layer(net, 1, name='state_q_value')
+            self.advantage = self.add_dense_layer(net, BOARD_SIZE, name='action_advantage')
 
-            self.q_values = self.value + tf.subtract(self.advantage,
-                                                     tf.reduce_mean(self.advantage, axis=1, keep_dims=True))
+            self.q_values = tf.add(self.value, tf.subtract(self.advantage,
+                                                           tf.reduce_mean(self.advantage, axis=1, keepdims=True)),
+                                   name="action_q_values")
 
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
 
             self.actions = tf.placeholder(shape=[None], dtype=tf.int32, name='actions')
             self.actions_onehot = tf.one_hot(self.actions, BOARD_SIZE, dtype=tf.float32)
-            self.q = tf.reduce_sum(tf.multiply(self.q_values, self.actions_onehot), axis=1)
+            self.q = tf.reduce_sum(tf.multiply(self.q_values, self.actions_onehot), axis=1, name="selected_action_q")
+
+            tf.summary.histogram("Action Q values", self.q)
 
             self.td_error = tf.square(self.target_q - self.q)
-            self.loss = tf.reduce_mean(self.td_error)
+            self.loss = tf.reduce_mean(self.td_error, name="q_loss")
 
-            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(self.loss,
-                                                                                                          name='train')
+            tf.summary.scalar("Q Loss", self.loss)
+            self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=name),
+                                          name="reg_losses")
+
+            reg_loss = 0.00001 * tf.reduce_mean(self.reg_losses)
+            tf.summary.scalar("Regularization loss", reg_loss)
+
+            self.merge = tf.summary.merge_all()
+
+            self.total_loss = tf.add(self.loss, reg_loss, name="total_loss")
+            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate). \
+                minimize(self.total_loss, name='train')
+
 
 
 class ReplayBuffer:
@@ -146,8 +170,8 @@ class DeepExpDoubleDuelQPlayer(Player):
         res = np.array([(state == self.side).astype(int),
                         (state == Board.other_side(self.side)).astype(int),
                         (state == EMPTY).astype(int)])
-        res = res.reshape(3,3,3)
-        res = np.transpose(res, [1,2,0])
+        res = res.reshape(3, 3, 3)
+        res = np.transpose(res, [1, 2, 0])
 
         # s4 = res[:,:,0]
         # s5 = res[:,:,1]
@@ -165,9 +189,9 @@ class DeepExpDoubleDuelQPlayer(Player):
             op_holder.append(t.assign((s.value() * tau) + ((1 - tau) * t.value())))
         return op_holder
 
-    def __init__(self, name: str, reward_discount: float = 0.95, win_value: float = 1.0, draw_value: float = 0.0,
-                 loss_value: float = -1.0, learning_rate: float = 0.1, training: bool = True,
-                 random_move_prob: float = 0.95, random_move_decrease: float = 0.95, batch_size=200,
+    def __init__(self, name: str, reward_discount: float = 0.99, win_value: float = 1.0, draw_value: float = 0.0,
+                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True,
+                 random_move_prob: float = 0.9999, random_move_decrease: float = 0.9997, batch_size=60,
                  pre_training_games: int = 500, tau: float = 0.001):
         """
         Constructor for the Neural Network player.
@@ -208,6 +232,8 @@ class DeepExpDoubleDuelQPlayer(Player):
 
         self.game_counter = 0
         self.pre_training_games = pre_training_games
+
+        self.writer = None
 
         super().__init__()
 
@@ -358,12 +384,19 @@ class DeepExpDoubleDuelQPlayer(Player):
             # We convert the input states we have recorded to feature vectors to feed into the training.
             nn_input = [self.board_state_to_nn_input(x[0]) for x in train_batch]
             actions = train_batch[:, 1]
+
             # We run the training step with the recorded inputs and new Q value targets.
-            TFSN.get_session().run([self.q_net.train_step],
-                                   feed_dict={self.q_net.input_positions: nn_input,
-                                              self.q_net.target_q: target_qs,
-                                              self.q_net.actions: actions})
+            summary, _ = TFSN.get_session().run([self.q_net.merge, self.q_net.train_step],
+                                             feed_dict={self.q_net.input_positions: nn_input,
+                                                        self.q_net.target_q: target_qs,
+                                                        self.q_net.actions: actions})
+            self.random_move_prob *= self.random_move_decrease
+
+            if self.writer is not None:
+                self.writer.add_summary(summary, self.game_counter)
+                summary = tf.Summary(value=[tf.Summary.Value(tag='Random Move Probability',
+                                                             simple_value=self.random_move_prob)])
+                self.writer.add_summary(summary, self.game_counter)
 
             TFSN.get_session().run(self.graph_copy_op)
 
-            self.random_move_prob *= self.random_move_decrease

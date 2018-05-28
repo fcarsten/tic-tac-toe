@@ -1,6 +1,7 @@
 from IPython.display import HTML, display
 from tic_tac_toe.Player import Player
 from tic_tac_toe.Board import Board, GameResult, CROSS, NAUGHT
+import tensorflow as tf
 
 
 def print_board(board):
@@ -65,7 +66,8 @@ def battle(player1: Player, player2: Player, num_games: int = 100000, silent: bo
     return cross_count, naught_count, draw_count
 
 
-def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100):
+def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100,
+                     writer: tf.summary.FileWriter = None):
     p1_wins = []
     p2_wins = []
     draws = []
@@ -79,5 +81,10 @@ def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=1
         draws.append(draw)
         game_counter = game_counter + 1
         game_number.append(game_counter)
+        if writer is not None:
+            summary = tf.Summary(value=[tf.Summary.Value(tag='Player 1 Win', simple_value=p1win),
+                                        tf.Summary.Value(tag='Player 2 Win', simple_value=p2win),
+                                        tf.Summary.Value(tag='Draw', simple_value=draw)])
+            writer.add_summary(summary, game_counter)
 
     return game_number, p1_wins, p2_wins, draws
