@@ -50,6 +50,10 @@ class QNetwork:
         self.probabilities = None
         self.train_step = None
 
+        # For TensorBoard
+
+        self.merge = None
+
         self.build_graph(name)
 
     def add_dense_layer(self, input_tensor: tf.Tensor, output_size: int, activation_fn=None,
@@ -82,13 +86,13 @@ class QNetwork:
 
             net = tf.layers.conv2d(inputs=net, filters=128, kernel_size=3,
                                    kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
-                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu)
             net = tf.layers.conv2d(inputs=net, filters=128, kernel_size=3,
                                    kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
-                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu)
             net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
                                    kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
-                                   data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu)
             # net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
             #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
             # net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=3,
@@ -105,7 +109,7 @@ class QNetwork:
             self.advantage = self.add_dense_layer(net, BOARD_SIZE, name='action_advantage')
 
             self.q_values = tf.add(self.value, tf.subtract(self.advantage,
-                                                     tf.reduce_mean(self.advantage, axis=1, keepdims=True)),
+                                                           tf.reduce_mean(self.advantage, axis=1, keepdims=True)),
                                    name="action_q_values")
 
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
@@ -114,13 +118,24 @@ class QNetwork:
             self.actions_onehot = tf.one_hot(self.actions, BOARD_SIZE, dtype=tf.float32)
             self.q = tf.reduce_sum(tf.multiply(self.q_values, self.actions_onehot), axis=1, name="selected_action_q")
 
+            tf.summary.histogram("Action Q values", self.q)
+
             self.td_error = tf.square(self.target_q - self.q)
             self.loss = tf.reduce_mean(self.td_error, name="q_loss")
+
+            tf.summary.scalar("Q Loss", self.loss)
             self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=name),
-                                          name="reg_loss")
-            self.total_loss = tf.add(self.loss, 0.00001 * tf.reduce_mean(self.reg_losses), name="total_loss")
-            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).\
+                                          name="reg_losses")
+
+            reg_loss = 0.00001 * tf.reduce_mean(self.reg_losses)
+            tf.summary.scalar("Regularization loss", reg_loss)
+
+            self.merge = tf.summary.merge_all()
+
+            self.total_loss = tf.add(self.loss, reg_loss, name="total_loss")
+            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate). \
                 minimize(self.total_loss, name='train')
+
 
 
 class ReplayBuffer:
@@ -155,8 +170,8 @@ class DeepExpDoubleDuelQPlayer(Player):
         res = np.array([(state == self.side).astype(int),
                         (state == Board.other_side(self.side)).astype(int),
                         (state == EMPTY).astype(int)])
-        res = res.reshape(3,3,3)
-        res = np.transpose(res, [1,2,0])
+        res = res.reshape(3, 3, 3)
+        res = np.transpose(res, [1, 2, 0])
 
         # s4 = res[:,:,0]
         # s5 = res[:,:,1]
@@ -217,6 +232,8 @@ class DeepExpDoubleDuelQPlayer(Player):
 
         self.game_counter = 0
         self.pre_training_games = pre_training_games
+
+        self.writer = None
 
         super().__init__()
 
@@ -368,10 +385,13 @@ class DeepExpDoubleDuelQPlayer(Player):
             nn_input = [self.board_state_to_nn_input(x[0]) for x in train_batch]
             actions = train_batch[:, 1]
             # We run the training step with the recorded inputs and new Q value targets.
-            TFSN.get_session().run([self.q_net.train_step],
-                                   feed_dict={self.q_net.input_positions: nn_input,
-                                              self.q_net.target_q: target_qs,
-                                              self.q_net.actions: actions})
+            summary, _ = TFSN.get_session().run([self.q_net.merge, self.q_net.train_step],
+                                             feed_dict={self.q_net.input_positions: nn_input,
+                                                        self.q_net.target_q: target_qs,
+                                                        self.q_net.actions: actions})
+
+            if self.writer is not None:
+                self.writer.add_summary(summary, self.game_counter)
 
             TFSN.get_session().run(self.graph_copy_op)
 

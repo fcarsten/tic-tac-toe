@@ -8,6 +8,12 @@ from tic_tac_toe.EGreedyNNQPlayer import EGreedyNNQPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
 from tic_tac_toe.RndMinMaxAgent import RndMinMaxAgent
 from tic_tac_toe.DeepExpDoubleDuelQPlayer2 import DeepExpDoubleDuelQPlayer
+
+TENSORLOG_DIR = './graphs'
+
+if tf.gfile.Exists(TENSORLOG_DIR):
+    tf.gfile.DeleteRecursively(TENSORLOG_DIR)
+
 tf.reset_default_graph()
 
 nnplayer = DeepExpDoubleDuelQPlayer("QLearner1") #, win_value=100.0, loss_value=-100.0)
@@ -21,7 +27,9 @@ rm_player = RndMinMaxAgent()
 TFSessionManager.set_session(tf.Session())
 
 sess = TFSessionManager.get_session()
-writer = tf.summary.FileWriter('./graphs', sess.graph)
+writer = tf.summary.FileWriter(TENSORLOG_DIR, sess.graph)
+nnplayer.writer = writer
+
 sess.run(tf.global_variables_initializer())
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
