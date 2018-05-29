@@ -119,12 +119,12 @@ class QNetwork:
             self.actions_onehot = tf.one_hot(self.actions, BOARD_SIZE, dtype=tf.float32)
             self.q = tf.reduce_sum(tf.multiply(self.q_values, self.actions_onehot), axis=1, name="selected_action_q")
 
-            tf.summary.histogram("Action Q values", self.q)
+            tf.summary.histogram("Action_Q_values", self.q)
 
             self.td_error = tf.square(self.target_q - self.q)
             self.loss = tf.reduce_mean(self.td_error, name="q_loss")
 
-            tf.summary.scalar("Q Loss", self.loss)
+            tf.summary.scalar("Q_Loss", self.loss)
             self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=name),
                                           name="reg_losses")
 
@@ -395,7 +395,7 @@ class DeepExpDoubleDuelQPlayer(Player):
 
             if self.writer is not None:
                 self.writer.add_summary(summary, self.game_counter)
-                summary = tf.Summary(value=[tf.Summary.Value(tag='Random Move Probability',
+                summary = tf.Summary(value=[tf.Summary.Value(tag='Random_Move_Probability',
                                                              simple_value=self.random_move_prob)])
                 self.writer.add_summary(summary, self.game_counter)
 
