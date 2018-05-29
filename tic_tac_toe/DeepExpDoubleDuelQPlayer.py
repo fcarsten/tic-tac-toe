@@ -18,13 +18,14 @@ class QNetwork:
     Contains a TensorFlow graph which is suitable for learning the Tic Tac Toe Q function
     """
 
-    def __init__(self, name: str, learning_rate: float):
+    def __init__(self, name: str, learning_rate: float, beta: float= 0.00001):
         """
         Constructor for QNetwork. Takes a name and a learning rate for the GradientDescentOptimizer
         :param name: Name of the network
         :param learning_rate: Learning rate for the GradientDescentOptimizer
         """
         self.learningRate = learning_rate
+        self.beta = beta
         self.name = name
 
         # Placeholders
@@ -127,7 +128,7 @@ class QNetwork:
             self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=name),
                                           name="reg_losses")
 
-            reg_loss = 0.00001 * tf.reduce_mean(self.reg_losses)
+            reg_loss = self.beta * tf.reduce_mean(self.reg_losses)
             tf.summary.scalar("Regularization loss", reg_loss)
 
             self.merge = tf.summary.merge_all()
