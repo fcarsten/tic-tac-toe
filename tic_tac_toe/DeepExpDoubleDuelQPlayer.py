@@ -190,8 +190,8 @@ class DeepExpDoubleDuelQPlayer(Player):
             op_holder.append(t.assign((s.value() * tau) + ((1 - tau) * t.value())))
         return op_holder
 
-    def __init__(self, name: str, reward_discount: float = 0.99, win_value: float = 1.0, draw_value: float = 0.0,
-                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True,
+    def __init__(self, name: str, reward_discount: float = 0.99, win_value: float = 10.0, draw_value: float = 0.0,
+                 loss_value: float = -10.0, learning_rate: float = 0.01, training: bool = True,
                  random_move_prob: float = 0.9999, random_move_decrease: float = 0.9997, batch_size=60,
                  pre_training_games: int = 500, tau: float = 0.001):
         """
