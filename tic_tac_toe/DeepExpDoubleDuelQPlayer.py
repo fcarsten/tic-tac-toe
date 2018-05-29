@@ -18,7 +18,7 @@ class QNetwork:
     Contains a TensorFlow graph which is suitable for learning the Tic Tac Toe Q function
     """
 
-    def __init__(self, name: str, learning_rate: float, beta: float= 0.00001):
+    def __init__(self, name: str, learning_rate: float, beta: float = 0.00001):
         """
         Constructor for QNetwork. Takes a name and a learning rate for the GradientDescentOptimizer
         :param name: Name of the network
@@ -138,7 +138,6 @@ class QNetwork:
                 minimize(self.total_loss, name='train')
 
 
-
 class ReplayBuffer:
     def __init__(self, buffer_size=3000):
         self.buffer = []
@@ -173,10 +172,6 @@ class DeepExpDoubleDuelQPlayer(Player):
                         (state == EMPTY).astype(int)])
         res = res.reshape(3, 3, 3)
         res = np.transpose(res, [1, 2, 0])
-
-        # s4 = res[:,:,0]
-        # s5 = res[:,:,1]
-        # s6 = res[:,:,2]
 
         return res
 
@@ -388,9 +383,9 @@ class DeepExpDoubleDuelQPlayer(Player):
 
             # We run the training step with the recorded inputs and new Q value targets.
             summary, _ = TFSN.get_session().run([self.q_net.merge, self.q_net.train_step],
-                                             feed_dict={self.q_net.input_positions: nn_input,
-                                                        self.q_net.target_q: target_qs,
-                                                        self.q_net.actions: actions})
+                                                feed_dict={self.q_net.input_positions: nn_input,
+                                                           self.q_net.target_q: target_qs,
+                                                           self.q_net.actions: actions})
             self.random_move_prob *= self.random_move_decrease
 
             if self.writer is not None:
@@ -400,4 +395,3 @@ class DeepExpDoubleDuelQPlayer(Player):
                 self.writer.add_summary(summary, self.game_counter)
 
             TFSN.get_session().run(self.graph_copy_op)
-
