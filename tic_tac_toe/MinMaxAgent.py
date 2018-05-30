@@ -16,11 +16,6 @@ class MinMaxAgent(Player):
     Already evaluated board positions are cached for efficiency.
     """
 
-    cache = {}
-    """
-    Cache to store the evaluation of board positions that we have already looked at. This avoids repeating a lot
-    of work as we do not look at all the possible continuation from this position again.
-    """
 
     WIN_VALUE = 1
     DRAW_VALUE = 0
@@ -31,6 +26,11 @@ class MinMaxAgent(Player):
         Getting ready for playing tic tac toe.
         """
         self.side = None
+        """
+        Cache to store the evaluation of board positions that we have already looked at. This avoids repeating a lot
+        of work as we do not look at all the possible continuation from this position again.
+        """
+        self.cache = {}
         super().__init__()
 
     def new_game(self, side):
@@ -61,8 +61,8 @@ class MinMaxAgent(Player):
         # First we check if we have seen this board position before, and if yes just return the cached value
         #
         board_hash = board.hash_value()
-        if board_hash in MinMaxAgent.cache:
-            return MinMaxAgent.cache[board_hash]
+        if board_hash in self.cache:
+            return self.cache[board_hash]
 
         #
         # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
@@ -93,10 +93,10 @@ class MinMaxAgent(Player):
 
                     # Shortcut: Can't get better than that, so abort here and return this move
                     if min_value == self.LOSS_VALUE:
-                        MinMaxAgent.cache[board_hash] = (min_value, action)
+                        self.cache[board_hash] = (min_value, action)
                         return min_value, action
 
-                MinMaxAgent.cache[board_hash] = (min_value, action)
+                self.cache[board_hash] = (min_value, action)
         return min_value, action
 
     def _max(self, board):
@@ -112,8 +112,8 @@ class MinMaxAgent(Player):
         # First we check if we have seen this board position before, and if yes just return the cached value
         #
         board_hash = board.hash_value()
-        if board_hash in MinMaxAgent.cache:
-            return MinMaxAgent.cache[board_hash]
+        if board_hash in self.cache:
+            return self.cache[board_hash]
 
         #
         # Init the min value as well as action. Min value is set to DRAW as this value will pass through in case
@@ -144,10 +144,10 @@ class MinMaxAgent(Player):
 
                     # Shortcut: Can't get better than that, so abort here and return this move
                     if max_value == self.WIN_VALUE:
-                        MinMaxAgent.cache[board_hash] = (max_value, action)
+                        self.cache[board_hash] = (max_value, action)
                         return max_value, action
 
-                MinMaxAgent.cache[board_hash] = (max_value, action)
+                self.cache[board_hash] = (max_value, action)
         return max_value, action
 
     def move(self, board):

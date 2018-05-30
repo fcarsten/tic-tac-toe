@@ -17,11 +17,6 @@ class RndMinMaxAgent(Player):
     Already evaluated board positions are cached for efficiency.
     """
 
-    cache = {}
-    """
-    Cache to store the evaluation of board positions that we have already looked at. This avoids repeating a lot
-    of work as we do not look at all the possible continuation from this position again.
-    """
 
     WIN_VALUE = 1
     DRAW_VALUE = 0
@@ -32,6 +27,13 @@ class RndMinMaxAgent(Player):
         Getting ready for playing tic tac toe.
         """
         self.side = None
+
+        """
+        Cache to store the evaluation of board positions that we have already looked at. This avoids repeating a lot
+        of work as we do not look at all the possible continuation from this position again.
+        """
+        self.cache = {}
+
         super().__init__()
 
     def new_game(self, side):
@@ -96,7 +98,7 @@ class RndMinMaxAgent(Player):
                     best_moves.add((min_value, action))
 
         best_moves = tuple(best_moves)
-        RndMinMaxAgent.cache[board_hash] = best_moves
+        self.cache[board_hash] = best_moves
 
         return random.choice(best_moves)
 
