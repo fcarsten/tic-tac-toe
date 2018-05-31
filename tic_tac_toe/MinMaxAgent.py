@@ -2,7 +2,7 @@
 # Copyright 2018 Carsten Friedrich (Carsten.Friedrich@gmail.com). All rights reserved
 #
 
-from tic_tac_toe.Board import Board, EMPTY
+from tic_tac_toe.Board import Board, EMPTY, GameResult
 from tic_tac_toe.Player import Player
 
 
@@ -33,14 +33,16 @@ class MinMaxAgent(Player):
         self.cache = {}
         super().__init__()
 
-    def new_game(self, side):
+    def new_game(self, side: int):
         """
         Setting the side for the game to come. Noting else to do.
         :param side: The side this player will be playing
         """
-        self.side = side
+        if self.side != side:
+            self.side = side
+            self.cache = {}
 
-    def final_result(self, result):
+    def final_result(self, result: GameResult):
         """
         Does nothing.
         :param result: The result of the game that just finished
@@ -48,7 +50,7 @@ class MinMaxAgent(Player):
         """
         pass
 
-    def _min(self, board: Board) -> (int, int):
+    def _min(self, board: Board) -> (float, int):
         """
         Evaluate the board position `board` from the Minimizing player's point of view.
 
@@ -99,7 +101,7 @@ class MinMaxAgent(Player):
                 self.cache[board_hash] = (min_value, action)
         return min_value, action
 
-    def _max(self, board):
+    def _max(self, board: Board) -> (float, int):
         """
         Evaluate the board position `board` from the Maximizing player's point of view.
 
@@ -150,9 +152,8 @@ class MinMaxAgent(Player):
                 self.cache[board_hash] = (max_value, action)
         return max_value, action
 
-    def move(self, board):
+    def move(self, board: Board) -> (GameResult, bool):
         """
-
         Making a move according to the MinMax algorithm
 
         :param board: The board to make a move on

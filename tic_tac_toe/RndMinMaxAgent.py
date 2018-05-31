@@ -2,7 +2,7 @@
 # Copyright 2017 Carsten Friedrich (Carsten.Friedrich@gmail.com). All rights reserved
 #
 
-from tic_tac_toe.Board import Board, EMPTY
+from tic_tac_toe.Board import Board, EMPTY, GameResult
 from tic_tac_toe.Player import Player
 import random
 
@@ -36,14 +36,16 @@ class RndMinMaxAgent(Player):
 
         super().__init__()
 
-    def new_game(self, side):
+    def new_game(self, side: int):
         """
         Setting the side for the game to come. Noting else to do.
         :param side: The side this player will be playing
         """
-        self.side = side
+        if self.side != side:
+            self.side = side
+            self.cache = {}
 
-    def final_result(self, result):
+    def final_result(self, result: GameResult):
         """
         Does nothing.
         :param result: The result of the game that just finished
@@ -51,12 +53,12 @@ class RndMinMaxAgent(Player):
         """
         pass
 
-    def _min(self, board):
+    def _min(self, board: Board) -> int:
         """
         Evaluate the board position `board` from the Minimizing player's point of view.
 
         :param board: The board position to evaluate
-        :return: Tuple of (Best Result, Best Move in this situation). Returns -1 for best move if the game has already
+        :return: returns the best Move in this situation. Returns -1 for best move if the game has already
         finished
         """
 
@@ -102,13 +104,12 @@ class RndMinMaxAgent(Player):
 
         return random.choice(best_moves)
 
-    def _max(self, board):
+    def _max(self, board: Board) -> int:
         """
         Evaluate the board position `board` from the Maximizing player's point of view.
 
         :param board: The board position to evaluate
-        :return: Tuple of (Best Result, Best Move in this situation). Returns -1 for best move if the game has already
-        finished
+        :return: Best Move in this situation. Returns -1 for best move if the game has already finished
         """
 
         #
@@ -154,7 +155,7 @@ class RndMinMaxAgent(Player):
 
         return random.choice(best_moves)
 
-    def move(self, board):
+    def move(self, board: Board) -> (GameResult, bool):
         """
 
         Making a move according to the MinMax algorithm. If more than one best move exist, chooses amongst them
