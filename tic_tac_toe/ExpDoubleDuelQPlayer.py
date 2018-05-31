@@ -82,7 +82,7 @@ class QNetwork:
             self.advantage = self.add_dense_layer(net, BOARD_SIZE, name='advantage')
 
             self.q_values = self.value + tf.subtract(self.advantage,
-                                                     tf.reduce_mean(self.advantage, axis=1, keep_dims=True))
+                                                     tf.reduce_mean(self.advantage, axis=1, keepdims=True))
 
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
 
@@ -258,6 +258,8 @@ class ExpDoubleDuelQPlayer(Player):
 
         # Most of the time our next move is the one with the highest probability after removing all illegal ones.
         # Occasionally, however we randomly chose a random move to encourage exploration
+
+        # noinspection PyUnresolvedReferences
         if (self.training is True) and \
                 ((self.game_counter < self.pre_training_games) or (np.random.rand(1) < self.random_move_prob)):
             move = board.random_empty_spot()

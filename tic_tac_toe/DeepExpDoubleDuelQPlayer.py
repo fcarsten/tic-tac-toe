@@ -129,7 +129,7 @@ class QNetwork:
                                           name="reg_losses")
 
             reg_loss = self.beta * tf.reduce_mean(self.reg_losses)
-            tf.summary.scalar("Regularization loss", reg_loss)
+            tf.summary.scalar("Regularization_loss", reg_loss)
 
             self.merge = tf.summary.merge_all()
 

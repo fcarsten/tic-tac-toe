@@ -1,5 +1,5 @@
 # Tic Tac Toe 
-## A cautionary tale about training a machine to play Tic Tac Toe through Reinforcement Learning
+## A tale about trying to train a machine to play Tic Tac Toe through Reinforcement Learning
 
 The goal of this series is to implement and test a couple of different approaches to 
 training a computer how to play **Tic Tac Toe**. We will create:
