@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Part 1 - Computer Tic Tac Toe Basics</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>Part 2 - The Min Max Algorithm</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,23 +11775,8 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Basic-Tic-Tac-Toe-support-classes-and-game-logic">Basic Tic Tac Toe support classes and game logic<a class="anchor-link" href="#Basic-Tic-Tac-Toe-support-classes-and-game-logic">&#182;</a></h1>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>In the first part of this series, we will introduce the basic framework and helper classes that we will use throughout. We will also create the first computer player.</p>
-<hr>
-<h2 id="Let's-get-started:">Let's get started:<a class="anchor-link" href="#Let's-get-started:">&#182;</a></h2><p>We will use the following classes which are defined in <a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/Board.py">Board.py</a>:</p>
-<ul>
-<li><code>Board</code>: Contains all the Tic Tac Toe board state management plus some utility methods</li>
-<li><code>GameResult</code>: Enum of all the possible game states. A game can be either <code>NOT_FINISHED</code>, <code>DRAW</code>, <code>CROSS_WIN</code>, or <code>NAUGT_WIN</code></li>
-<li><code>CROSS</code>, <code>NAUGHT</code>: Will tell our players what side they play, as well as inidcate what pieces are on each square of the board - which can also be <code>EMPTY</code>. </li>
-</ul>
-<p>We also define a utility method <code>print_board</code> that prints a board state pretty in HTML:</p>
+<h1 id="Min-Max,-a-perfect-Tic-Tac-Toe-player">Min-Max, a perfect Tic Tac Toe player<a class="anchor-link" href="#Min-Max,-a-perfect-Tic-Tac-Toe-player">&#182;</a></h1><p>In this Notebook, we will use the Min-Max algorithm to create a computer player which will be able to play Tic Tac Toe perfectly. That is, the player will always play the best possible move in a given situation. This player will give us a good benchmark to compare the other players against.</p>
+<p>Let's start by importing a few of the utility functions and classes we defined last time and make sure it all still works:</p>
 
 </div>
 </div>
@@ -11802,404 +11787,17 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="k">import</span> <span class="n">HTML</span><span class="p">,</span> <span class="n">display</span>
-<span class="kn">from</span> <span class="nn">tic_tac_toe.Board</span> <span class="k">import</span> <span class="n">Board</span><span class="p">,</span> <span class="n">GameResult</span><span class="p">,</span> <span class="n">CROSS</span><span class="p">,</span> <span class="n">NAUGHT</span>
-
-
-<span class="k">def</span> <span class="nf">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">):</span>
-    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    &lt;style&gt;</span>
-<span class="s2">    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {</span>
-<span class="s2">      border: 1px  black solid !important;</span>
-<span class="s2">      color: black !important;</span>
-<span class="s2">    }</span>
-<span class="s2">    &lt;/style&gt;</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="o">+</span><span class="n">board</span><span class="o">.</span><span class="n">html_str</span><span class="p">()))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>We can now create a new board and print it in all its empty glory:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">()</span>
-<span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Time to make a move. We use the methods <code>random_empty_spot</code> and <code>move</code> to find a random empty spot on the board and put a <code>CROSS</code> there. We then print the board to confirm:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">board</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">(),</span> <span class="n">CROSS</span><span class="p">)</span>
-<span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Let's extend that to play a whole game.</p>
-<p>We reset the board state and play alternating CROSS and NAUGHT until the game is either won by one side or a draw. We print the board after each move. After the game has finished print out who won.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">board</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
-   <span class="n">_</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">(),</span> <span class="n">CROSS</span><span class="p">)</span>
-   <span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-   <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-       <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-           <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Game is a draw&quot;</span><span class="p">)</span>
-       <span class="k">else</span><span class="p">:</span>
-           <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cross won!&quot;</span><span class="p">)</span>
-   <span class="k">else</span><span class="p">:</span>
-       <span class="n">_</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">(),</span> <span class="n">NAUGHT</span><span class="p">)</span>
-       <span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-       <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-               <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Game is a draw&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-               <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Naught won!&quot;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>&ensp;</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>x</td><td>&ensp;</td><td>o</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>Naught won!
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>let's wrap this code in a utility function called <code>play_game</code>. It takes a board and 2 players and plays a complete game. It returns the result of the game at the end. We will use this going forward to evaluate our computer players.</p>
-<p>Let's test the new function by playing a game:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.Player</span> <span class="k">import</span> <span class="n">Player</span>
-
-
-<span class="k">def</span> <span class="nf">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">:</span> <span class="n">Board</span><span class="p">,</span> <span class="n">player1</span><span class="p">:</span> <span class="n">Player</span><span class="p">,</span> <span class="n">player2</span><span class="p">:</span> <span class="n">Player</span><span class="p">):</span>
-    <span class="n">player1</span><span class="o">.</span><span class="n">new_game</span><span class="p">(</span><span class="n">CROSS</span><span class="p">)</span>
-    <span class="n">player2</span><span class="o">.</span><span class="n">new_game</span><span class="p">(</span><span class="n">NAUGHT</span><span class="p">)</span>
-    <span class="n">board</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-    
-    <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">player1</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-                <span class="n">final_result</span> <span class="o">=</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">final_result</span> <span class="o">=</span>  <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">player2</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-                    <span class="n">final_result</span> <span class="o">=</span>  <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">final_result</span> <span class="o">=</span>  <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span>
-        
-    <span class="n">player1</span><span class="o">.</span><span class="n">final_result</span><span class="p">(</span><span class="n">final_result</span><span class="p">)</span>
-    <span class="n">player2</span><span class="o">.</span><span class="n">final_result</span><span class="p">(</span><span class="n">final_result</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">final_result</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h1 id="The-RandomPlayer">The RandomPlayer<a class="anchor-link" href="#The-RandomPlayer">&#182;</a></h1><p>Time to introduce our first contender, the <a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/RandomPlayer.py"><code>RandomPlayer</code></a>. It looks for a random empty spot on the board and puts its piece there - pretty much the same way as we just did above; just wrapped into a class.</p>
-<p>Let's import it, create 2 instances and let them play a game:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.RandomPlayer</span> <span class="k">import</span> <span class="n">RandomPlayer</span>
-
+<span class="kn">from</span> <span class="nn">tic_tac_toe.Board</span> <span class="k">import</span> <span class="n">Board</span><span class="p">,</span> <span class="n">GameResult</span><span class="p">,</span> <span class="n">CROSS</span><span class="p">,</span> <span class="n">NAUGHT</span><span class="p">,</span> <span class="n">EMPTY</span>
+<span class="kn">from</span> <span class="nn">util</span> <span class="k">import</span> <span class="n">print_board</span><span class="p">,</span> <span class="n">play_game</span>
+<span class="kn">from</span> <span class="nn">tic_tac_toe.RandomPlayer</span> <span class="k">import</span> <span class="n">RandomPlayer</span>
+
+<span class="n">board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">()</span>
 <span class="n">player1</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
 <span class="n">player2</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
+
 <span class="n">result</span> <span class="o">=</span> <span class="n">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">player1</span><span class="p">,</span> <span class="n">player2</span><span class="p">)</span>
 <span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
+
 <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cross won&quot;</span><span class="p">)</span>
 <span class="k">elif</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span><span class="p">:</span>
@@ -12230,7 +11828,7 @@ div#notebook {
       color: black !important;
     }
     </style>
-    <table border="1"><tr><td>o</td><td>&ensp;</td><td>x</td></tr><tr><td>o</td><td>x</td><td>&ensp;</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr></table>
+    <table border="1"><tr><td>o</td><td>x</td><td>x</td></tr><tr><td>o</td><td>x</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>x</td><td>o</td></tr></table>
 </div>
 
 </div>
@@ -12254,41 +11852,217 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h1 id="Establishing-some-ground-truth.">Establishing some ground truth.<a class="anchor-link" href="#Establishing-some-ground-truth.">&#182;</a></h1><p>Using the code we introduced above we can now establish some ground truth: If we let 2 random players play against each other a large enough number of times, how many games do we expect to be won by <code>NAUGHT</code>, how many by <code>CROSS</code>, and how many do we expect to end in a draw?</p>
-<p>Going forward, building more intelligent players, we can then measure how much better they play compared to a random player.</p>
+<h2 id="The-Min-Max-algorithm">The Min-Max algorithm<a class="anchor-link" href="#The-Min-Max-algorithm">&#182;</a></h2><p>So, what is this Min-Max algorithm that we want to implement?</p>
+<p>The long answer can be found <a href="https://en.wikipedia.org/wiki/Minimax">here</a>. We won't go into that much detail here and just look at the general idea:</p>
+<p>Given a board state, we find the best move by simulating all possible continuations from this position and chose the one that is best for us. The one best for us is the one with the best outcome if we assume:</p>
+<ul>
+<li>we always make the move that is best for us (<em>Maximizes</em> the game value for us) and </li>
+<li>our opponent always makes the move that is best for them (and thus worst for us - <em>Minimizing</em> the game value for us). </li>
+</ul>
+<p>You can see where the algorithm gets its name from. This algorithm, and variations of it, is very popular for writing game engines that play games like Tik Tak Toe, Chess, Checkers, etc.</p>
+<div class="alert alert-block alert-info">
+Side Note: For games with a large number of different board positions like Chess, the algorithm will generally not be able to completely simulate all continuations. In those cases the algorithm will only look ahead a certain number of moves and estimate the value of the position then. Also, more advanced versions of this algorithm, e.g. [alpha / beta pruning](https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning) are used in those cases.
+</div><p>Let's look at an exmaple. Given the followin board state and NAUGHT to move next:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">num_games</span> <span class="o">=</span> <span class="mi">100000</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">example</span> <span class="o">=</span> <span class="n">Board</span><span class="p">([</span><span class="n">CROSS</span>  <span class="p">,</span> <span class="n">EMPTY</span>  <span class="p">,</span> <span class="n">CROSS</span><span class="p">,</span>
+                 <span class="n">NAUGHT</span> <span class="p">,</span> <span class="n">NAUGHT</span> <span class="p">,</span> <span class="n">CROSS</span><span class="p">,</span>
+                 <span class="n">EMPTY</span>  <span class="p">,</span> <span class="n">EMPTY</span>  <span class="p">,</span> <span class="n">NAUGHT</span><span class="p">])</span>
+<span class="n">print_board</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+</pre></div>
 
-<span class="n">draw_count</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">cross_count</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">naught_count</span> <span class="o">=</span> <span class="mi">0</span>
+</div>
+</div>
+</div>
 
-<span class="n">p1</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
-<span class="n">p2</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
+<div class="output_wrapper">
+<div class="output">
 
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_games</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span><span class="p">:</span>
-        <span class="n">cross_count</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">elif</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span><span class="p">:</span>
-        <span class="n">naught_count</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">draw_count</span> <span class="o">+=</span> <span class="mi">1</span>
-        
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;After </span><span class="si">{}</span><span class="s2"> game we have draws: </span><span class="si">{}</span><span class="s2">, cross wins: </span><span class="si">{}</span><span class="s2">, and naught wins: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_games</span><span class="p">,</span> <span class="n">draw_count</span><span class="p">,</span> 
-                                                                        <span class="n">cross_count</span><span class="p">,</span> <span class="n">naught_count</span><span class="p">))</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Which gives percentages of draws : cross : naught of about </span><span class="si">{:.2%}</span><span class="s2"> : </span><span class="si">{:.2%}</span><span class="s2"> : </span><span class="si">{:.2%}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-    <span class="n">draw_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">,</span> <span class="n">cross_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">,</span> <span class="n">naught_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">))</span>
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+<div class="output_html rendered_html output_subarea ">
+
+    <style>
+    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
+      border: 1px  black solid !important;
+      color: black !important;
+    }
+    </style>
+    <table border="1"><tr><td>x</td><td>&ensp;</td><td>x</td></tr><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>o</td></tr></table>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The following continuations are possible:
+<img src="./Images/TicTacToe-MinMax-Example1.png" alt="title"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>That is: first NAUGHT, the maximizing player, gets to move, then CROSS, the minimizing player, gets to move and in those cases where the game has not ended at that point, NAUGHT, the maximizing player, gets one more move:
+<img src="./Images/TicTacToe-MinMax-Example2.png" alt="title"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We label all final game states according to their value from the point of view of Naught:</p>
+<ul>
+<li>1 for a win</li>
+<li>-1 for a loss</li>
+<li>0 for a draw</li>
+</ul>
+<p><img src="./Images/TicTacToe-MinMax-Example3.png" alt="title"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now we can back-propagate the scores from the bottom layer to the layer above. According to the algorithm, as it is the maximizing player's turn, we chose the move with the highest score.</p>
+<p>Note that in this initial case, as there is only one possible move and the move thus is forced, we just propagate that value one layer up without having to chose a maximizing move:</p>
+<p><img src="./Images/TicTacToe-MinMax-Example4.png" alt="title"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now we propagate up again. This time it is the minimizing player's turn, so we propagate the smaller values for each possible move up:</p>
+<p><img src="./Images/TicTacToe-MinMax-Example5.png" alt="title"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Finally, we propagate one more layer up. This time it's the maximizing player again, so we chose the highest possible value of all moves for the position:</p>
+<p><img src="./Images/TicTacToe-MinMax-Example6.png" alt="title"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now, we know everything we need to know to make a move:</p>
+<ul>
+<li><p>The best we can hope for, if both we and our opponent always plays their best move, is a draw (since the value of the current board position is 0).</p>
+</li>
+<li><p>We also know that there is only 1 move in the current situation that will achieve this best case for us: Putting a NAUGHT in the middle spot on the top row.</p>
+</li>
+</ul>
+<p>Note that there are other potential continuation that would also lead to a draw, and some that might even lead to NAUGHT winning. Unfortunately, however, we also know now that if CROSS always plays their best move, we won't ever have a chance to to reach any of these outcomes.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="The-Min-Max-Player-Code">The Min-Max Player Code<a class="anchor-link" href="#The-Min-Max-Player-Code">&#182;</a></h2><p>Our code contains 2 player classes which implement the Min Max algorithm for playing Tic Tac Toe:</p>
+<ul>
+<li><p><a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/MinMaxAgent.py">MinMaxAgent.py</a>: Plays Tic Tac Toe using the Min Max Algorithm in a deterministic way. I.e. if there is more than 1 move with euqal best scores in a given position, this player will always chose the same move.</p>
+</li>
+<li><p><a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/RndMinMaxAgent.py">RndMinMaxAgent.py</a>: Plays Tic Tac Toe using the Min Max Algorithm in a non-deterministic way. I.e. if there is more than 1 move with euqal best scores in a given position this player will each time randomly chose between them.</p>
+</li>
+</ul>
+<p>In order to make things a bit more efficient, the players will also store the value for a given board position in an internal cache. This means, that they only have to compute the possible continuations from each position once. It even makes this first computation more efficient, as often different move combination will produce the same board position, which, with the cached result, we don't have to evaluate again.</p>
+<div class="alert alert-block alert-info">
+Side Note: Even on a moderately fast computer this works quite well due to the small number of possible board positions in Tic Tac Toe: <br/><br/>
+
+While a game can have something like $9! = 362,800$ different possible move combinations, i.e. 9 choices for the first move, 8 choices for the second move, 7 choices for the 3rd move etc down to 1 choice for the last move (and for simpicity ignoring the fact that the game can be over before all squares are occupied - thus reducing the actual number of move combinations), the game can only have $3^9 = 19,683$ different states as each square can only either be empty, have a NAUGHT, or have a CROSS in it (again for simplicity ignoring the fact that these include game states that are impossible in a real game; also ignoring the fact that we could reduce the number of states further by treating symmetric position as being the same). 
+</div><p>Let's see how they perform.</p>
+<p>First we define a small utility function which we call <code>battle</code> to repeatedly pit 2 players against each other for a number of games. After the "battle" has finished, the function will return statistics about who won how often.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.Player</span> <span class="k">import</span> <span class="n">Player</span>
+
+<span class="k">def</span> <span class="nf">battle</span><span class="p">(</span><span class="n">player1</span><span class="p">:</span> <span class="n">Player</span><span class="p">,</span> <span class="n">player2</span><span class="p">:</span> <span class="n">Player</span><span class="p">,</span> <span class="n">num_games</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">):</span>
+    <span class="n">board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">()</span>
+    <span class="n">draw_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cross_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">naught_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_games</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">player1</span><span class="p">,</span> <span class="n">player2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span><span class="p">:</span>
+            <span class="n">cross_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span><span class="p">:</span>
+            <span class="n">naught_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">draw_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;After </span><span class="si">{}</span><span class="s2"> game we have draws: </span><span class="si">{}</span><span class="s2">, Player 1 wins: </span><span class="si">{}</span><span class="s2">, and Player 2 wins: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_games</span><span class="p">,</span> <span class="n">draw_count</span><span class="p">,</span>
+                                                                                         <span class="n">cross_count</span><span class="p">,</span> <span class="n">naught_count</span><span class="p">))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Which gives percentages of draws: </span><span class="si">{:.2%}</span><span class="s2">, Player 1 wins: </span><span class="si">{:.2%}</span><span class="s2">, and Player 2 wins:  </span><span class="si">{:.2%}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">draw_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">,</span> <span class="n">cross_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">,</span> <span class="n">naught_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's use this function and to start of with we pit the MinMaxAgent against the RandomPlayer:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.MinMaxAgent</span> <span class="k">import</span> <span class="n">MinMaxAgent</span>
+
+<span class="n">battle</span><span class="p">(</span><span class="n">MinMaxAgent</span><span class="p">(),</span> <span class="n">RandomPlayer</span><span class="p">())</span>
 </pre></div>
 
 </div>
@@ -12305,8 +12079,8 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>After 100000 game we have draws: 12827, cross wins: 58313, and naught wins: 28860.
-Which gives percentages of draws : cross : naught of about 12.83% : 58.31% : 28.86%
+<pre>After 100000 game we have draws: 489, Player 1 wins: 99511, and Player 2 wins: 0.
+Which gives percentages of draws: 0.49%, Player 1 wins: 99.51%, and Player 2 wins:  0.00%
 </pre>
 </div>
 </div>
@@ -12319,8 +12093,92 @@ Which gives percentages of draws : cross : naught of about 12.83% : 58.31% : 28.
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h2 id="Established-Baseline">Established Baseline<a class="anchor-link" href="#Established-Baseline">&#182;</a></h2><p>In addition to the statistics computed above, we also know that if both players always make the best possible move, a game of Tic Tac Toe will always end in a draw. The gives us the following baseline:</p>
+<p>And now, with the Random player going first:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">battle</span><span class="p">(</span><span class="n">RandomPlayer</span><span class="p">(),</span> <span class="n">MinMaxAgent</span><span class="p">())</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>After 100000 game we have draws: 19323, Player 1 wins: 0, and Player 2 wins: 80677.
+Which gives percentages of draws: 19.32%, Player 1 wins: 0.00%, and Player 2 wins:  80.68%
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And just for validation, the 2 MinMax players against each other:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.RndMinMaxAgent</span> <span class="k">import</span> <span class="n">RndMinMaxAgent</span>
+
+<span class="n">battle</span><span class="p">(</span><span class="n">MinMaxAgent</span><span class="p">(),</span> <span class="n">RndMinMaxAgent</span><span class="p">())</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>After 100000 game we have draws: 100000, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As expected and to my relief, we get 100% draws.</p>
+<h1 id="Baseline-Part-2">Baseline Part 2<a class="anchor-link" href="#Baseline-Part-2">&#182;</a></h1><p>This gives us an additional baseline:</p>
 <table>
 <thead><tr>
 <th>Player</th>
@@ -12331,20 +12189,27 @@ Which gives percentages of draws : cross : naught of about 12.83% : 58.31% : 28.
 </thead>
 <tbody>
 <tr>
-<td>Perfect</td>
+<td>Min Max - Random</td>
+<td>99.5%</td>
+<td>0%</td>
+<td>0.5%</td>
+</tr>
+<tr>
+<td>Random - Min Max</td>
+<td>0%</td>
+<td>80%</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>Min Max - Min Max</td>
 <td>0%</td>
 <td>0%</td>
 <td>100%</td>
 </tr>
-<tr>
-<td>Random</td>
-<td>58%</td>
-<td>13%</td>
-<td>29%</td>
-</tr>
 </tbody>
 </table>
-<p>In the following parts we will aim to create players that play perfectly. Where we don't quite achieve that, we will still be able to at least measure how better than the <code>RandomPlayer</code> our player is.</p>
+<p>This means, in order to be considered as playing better than pure random, a player should achieve significantly more than 20% draws against a Min-Max player when going first and significantly more than 1% draws when going second.</p>
+<p>In the next part we will look at our first player using reinforcement learning: The Tabular Q-Learner.</p>
 
 </div>
 </div>

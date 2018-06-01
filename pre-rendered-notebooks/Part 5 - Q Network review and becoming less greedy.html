@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Part 1 - Computer Tic Tac Toe Basics</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>Part 5 - Q Network review and becoming less greedy</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,7 +11775,71 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Basic-Tic-Tac-Toe-support-classes-and-game-logic">Basic Tic Tac Toe support classes and game logic<a class="anchor-link" href="#Basic-Tic-Tac-Toe-support-classes-and-game-logic">&#182;</a></h1>
+<h1 id="Neural-Network-Q-Learning-Part-2:-Looking-at-what-went-wrong-and-becoming-less-greedy">Neural Network Q Learning Part 2: Looking at what went wrong and becoming less greedy<a class="anchor-link" href="#Neural-Network-Q-Learning-Part-2:-Looking-at-what-went-wrong-and-becoming-less-greedy">&#182;</a></h1><p>In the previous part, we created a simple Neural Network based player and had it play against the Random Player, the Min Max Player, and the non-deterministic Min Max player. While we had some success, overall results were underwhelming:</p>
+<table>
+<thead><tr>
+<th>Player</th>
+<th>NN Player 1st</th>
+<th>NN Player 2nd</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Random</td>
+<td>Not bad but not perfect</td>
+<td>Kind of but not really</td>
+</tr>
+<tr>
+<td>Min Max</td>
+<td>Mixed - All or nothing</td>
+<td>Mixed - All or nothing</td>
+</tr>
+<tr>
+<td>Rnd Min Max</td>
+<td>Somtimes / Mixed</td>
+<td>Nope</td>
+</tr>
+</tbody>
+</table>
+<h2 id="What-could-have-gone-wrong?">What could have gone wrong?<a class="anchor-link" href="#What-could-have-gone-wrong?">&#182;</a></h2><p>Let's start by looking at our code and try to identify possible reasons why things may have gone less than optimal:</p>
+<ul>
+<li>Bugs in the code or other fundamental screw-ups.</li>
+<li>The network we defined is not suitable for this task: Input features not optimal, not enough layers, layers not big enough, sub-optimal activation function, sub-optimal optimizer, sub-optimal weight initialization, sub-optimal loss function.</li>
+<li>Bad values for other hyper-parameters: Optimizer learning rate, reward discount, win/loss/draw rewards.</li>
+<li>The training data wasn't optimal.</li>
+<li>The Tic Tac Toe Q function is fundamentally unlearnable by Neural Networks.</li>
+</ul>
+<p>Well, this is quite a list. Randomly tweaking and seeing what happens is not really feasible. Too many possible ways to do so and each of them would take a long time to evaluate - at least on my computer.</p>
+<p>Let's make a quick assessment and come up with some hypotheses about each of the above. Hopefully we can identify some more likely candidates and discard some others.</p>
+<h3 id="Bugs-in-the-code-or-other-fundamental-screw-ups.">Bugs in the code or other fundamental screw ups.<a class="anchor-link" href="#Bugs-in-the-code-or-other-fundamental-screw-ups.">&#182;</a></h3><p>Possible, but hard to confirm. Maybe we calculate the rewards incorrectly, or we feed the trainig data into the network incorrectly, or we use TensorFlow incorrectly, maybe we don't even create the graph correctly? We know that we didn't screw up completely as the Neural Netwok does learn quite well in some scenarios / cases. This doesn't mean we don't have some nasty bugs in there, but for the moment this might not be the most promising avenue to presue. Maybe some bugs will surface while we look close at some of the other options.</p>
+<h3 id="Our-network-is-not-good.">Our network is not good.<a class="anchor-link" href="#Our-network-is-not-good.">&#182;</a></h3><h4 id="Input-features">Input features<a class="anchor-link" href="#Input-features">&#182;</a></h4><p>We encode the board state as 3x9=27 bits indicating naughts, crosses, and empty fields on the board. There are other possible ways we could do this:</p>
+<ol>
+<li>We could use an array of 9 integers encoding crosses, naughts, and empty spaces.</li>
+<li>We could feed in our board hash value as a sinlge interger input.</li>
+<li>We could create and add some hand-crafted features: Another array indicating moves that would win the game or lose the game; mark potential forks etc.</li>
+<li>We could feed the board in as 2D features planes instead of 1D feature vectors.</li>
+</ol>
+<p>Option 1) is possible, but as far as I remember the conensus seems to be that bit features are better than value-encoded features for cases like game board states. It's also what the professionals seem to use, e.g. DeepMind for <a href="https://deepmind.com/documents/119/agz_unformatted_nature.pdf">AplhaZero</a>. There are siginificant differences in other parts of our approach and the one used in AlphaZero, and I don't seem to be able to find any hard references for bit vs value encoding right now, but I'm reasonably confident we're probably not too wrong in what we do here. Option 2) should be even worse in this case.</p>
+<p>Options 3) would almost certainly improve things, but I explicitly don't want to do this. The goal here really is to train a Neural Network to play Tic Tac Toe based on reinforcement alone, i.e. with no prior human game strategy knowledge built into the system. By suggesting that certain features like win/lose in one move, or forks are important would artificially add such information. So, while it may work, we won't do this.</p>
+<p>Option 4) is an interesting one. The fact that we use a 1D vector certainly loses some of the obviously existing 2D features on the board. For a human, it would be very hard to play Tic Tac Toe if presented with a board in this way, especially if they have to do so without transforming it back to a 2D representation in their head. On the other hand, I don't see how our particular network would be able to exploit the 2D representaion. If we would be using a <a href="https://en.wikipedia.org/wiki/Convolutional_neural_network">convolutional neural network</a>, this would be different, but for our simple network I don't think it would make a difference. Feel encouraged however to give it a try and report back. Especially if it worked!</p>
+<p>In summary, while there is some uncertainty about our input feature vector, it's probably ok I think.</p>
+<h4 id="The-network-itself">The network itself<a class="anchor-link" href="#The-network-itself">&#182;</a></h4><p>We only use 1 hidden layer and this layer is not particularly large. Maybe we should try bigger or more hidden layers.</p>
+<p>We use <code>ReLu</code> as activation function and there are other options we could try, such as <code>tanh</code>, <code>leaky relu</code>, <code>sigmoid</code>, etc. Might be worth trying, but <code>ReLu</code> seems to be generally regarded as an allrounder to be used unless you have a particular reason not to. Based on my very limited understanding of what I'm doing here, I don't really see a good reason to use any of the others, so we'll leave that one alone as well for the time being. If you want to play around with this, maybe give the <code>leaky ReLu</code> a go and let us know how it went.</p>
+<p>Similar to the activiation function, the <a href="https://www.tensorflow.org/api_docs/python/tf/train/GradientDescentOptimizer">GradientDescentOptimizer</a> should be a good alrounder to be used here. But again, there are many other options one could try, e.g. the popular <a href="https://www.tensorflow.org/api_docs/python/tf/train/AdamOptimizer">AdamOptimizer</a>.</p>
+<p>Regarding the loss function, I'm reasonably confident here. We want to approximate a function (the Q function of Tic Tac Toe), so this should make it a regression problem, which as I understand it should mean that <a href="tf.losses.mean_squared_error">Mean Squared Error</a> should be a good choice.</p>
+<p>Weight initialization is in my limited experience surprisingly important, and can significantly impact performance. E.g. in the worst case of initializiung all weights with the same number it basically collapses the layer widths to 1 as all nodes in a layer would always have the same value. We use the <a href="tf.contrib.layers.variance_scaling_initializer">Variance Scaling initializer</a> which shouldn't be a bad choice as far as I can tell - especially if we want to add more layers to our network, but again, there are many other options we could try.</p>
+<p>We have already discussed the input feature above.</p>
+<p>There are also various other, more sophisticated network topologies we can use to try to train a Neural Network how to play Tic Tac Toe: Double Q Network, Deep Q Network, Duelling Q Network, Policy Gradient, Asynchronous Actor-Critic Agents (A3C), etc.</p>
+<h4 id="Other-Hyper-Parameters">Other Hyper Parameters<a class="anchor-link" href="#Other-Hyper-Parameters">&#182;</a></h4><p>Then there are the hyper-parameters that let us tune the network without chaning its topology: Learning rate, reward discount, win/loss/draw rewards are all values we can be changed and which potentially will make performance better or worse. We'll have to see if we can get some clues on whether we need to make changes here.</p>
+<h3 id="Training-data">Training data<a class="anchor-link" href="#Training-data">&#182;</a></h3><p>The training data is pretty much determined by our use of the Reinforcement Learning approach. I.e. making the current network play games using its current Q function approximation and then update its weights based on the outcome. There are some things we could do a bit differently however, and potentially better:</p>
+<ul>
+<li>We currently always chose the move that we estimate is the best one. This is called a <em>greedy</em> strategy. This carries the risk that we get stuck in a particular pattern and never take a risk and investigate some other potential moves. E.g. in the worst case this might mean that due random weight initialization the move that would be best ends up with an estimated Q value that is so bad that it would never be chosen. Since we will never ever chose this move it will never get a chance to cause a positive reward and thus get a chance to have its Q value estimate corrected. A potential solution for this is to use a <em>$\epsilon$ - greedy</em> strategy, where we <em>most of the time</em> use the move with the highest Q value, but occasionally (with probability $\epsilon$ - thus the name) chose a sub-optimal move to encourage better exploration of our possible action-space.</li>
+<li>Another limitation of our current approach is that we only feed the last game into the training step. The risk here is that if a network loses a lot it will mostly get losses as training input. This could potentially cause a self-reinforcing  situation where the lack of any positive rewards will lead the network to predict that, no matter what it does, it will always lose, thus all moves are just bad. We should test this hypothesis, and if true might need to add a cache of previously played games to feed back into the network, potentially artificially boosting the number of samples with positive reward outcomes.</li>
+</ul>
+<p>We will give this a try and see if it helps.</p>
+<h3 id="The-Tic-Tac-Toe-Q-function-is-fundamentally-unlearnable-by-Neural-Networks">The Tic Tac Toe Q function is fundamentally unlearnable by Neural Networks<a class="anchor-link" href="#The-Tic-Tac-Toe-Q-function-is-fundamentally-unlearnable-by-Neural-Networks">&#182;</a></h3><p>Yeah, nah. Theoretically possible maybe, but extremly unlikely. Given the success others have with Neural Networks in related and much more complex tasks, this is probably not it.</p>
+<p>Most serious approaches do however use a slightly different approach than we do by combining a Neural Network with other techniques such as variations of Tree Search, e.g. <a href="https://en.wikipedia.org/wiki/Monte_Carlo_tree_search">Monte Carlo tree search</a>. This wouldn't make much sense in our Tic Tac Toe scenario since we have seen in the Min Max Player part that a tree search on its own can master Tic Tac Toe already without breaking a sweat. There is not much a Neural Network could contribute here even if we severly restrict the search depth.</p>
+
 </div>
 </div>
 </div>
@@ -11783,15 +11847,23 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>In the first part of this series, we will introduce the basic framework and helper classes that we will use throughout. We will also create the first computer player.</p>
-<hr>
-<h2 id="Let's-get-started:">Let's get started:<a class="anchor-link" href="#Let's-get-started:">&#182;</a></h2><p>We will use the following classes which are defined in <a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/Board.py">Board.py</a>:</p>
-<ul>
-<li><code>Board</code>: Contains all the Tic Tac Toe board state management plus some utility methods</li>
-<li><code>GameResult</code>: Enum of all the possible game states. A game can be either <code>NOT_FINISHED</code>, <code>DRAW</code>, <code>CROSS_WIN</code>, or <code>NAUGT_WIN</code></li>
-<li><code>CROSS</code>, <code>NAUGHT</code>: Will tell our players what side they play, as well as inidcate what pieces are on each square of the board - which can also be <code>EMPTY</code>. </li>
-</ul>
-<p>We also define a utility method <code>print_board</code> that prints a board state pretty in HTML:</p>
+<h1 id="Becoming-less-greedy">Becoming less greedy<a class="anchor-link" href="#Becoming-less-greedy">&#182;</a></h1><p>Based on our investigation above, it looks like a promising first step might be to use a less greedy action policy.</p>
+<p>Becoming less greedy is quite straight forward. We simply add a parameter $\epsilon$, and with probability $\epsilon$ we don't chose what we think is the best move, but a random, different move.</p>
+<p>In the beginning of our training we want to be quite adventurous and try all kinds of moves. The more our training advances the more confident we should be in our Q value estimates and thus the less likely we should be to try random other moves. This means we will also need a second parameter to continuously decrease $\epsilon$ over time.</p>
+<p>This is implemented in <a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/EGreedyNNQPlayer.py">EGreedyNNQPlayer.py</a>.</p>
+<p>It is very similar to our previous version, with the following changes. When we select a move, instead of</p>
+<div class="highlight"><pre><span></span><span class="n">move</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+</pre></div>
+<p>we now do</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span> <span class="ow">is</span> <span class="bp">True</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_move_prob</span><span class="p">:</span>
+    <span class="n">move</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">move</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+</pre></div>
+<p>and during training we reduce the probability of making a random move:</p>
+<div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">random_move_prob</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">random_move_decrease</span>
+</pre></div>
+<p>Let's see how it goes. We will use the new $\epsilon$-greedy strategy and also play a bit with the other hyperparameters:</p>
 
 </div>
 </div>
@@ -11801,494 +11873,31 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="k">import</span> <span class="n">HTML</span><span class="p">,</span> <span class="n">display</span>
-<span class="kn">from</span> <span class="nn">tic_tac_toe.Board</span> <span class="k">import</span> <span class="n">Board</span><span class="p">,</span> <span class="n">GameResult</span><span class="p">,</span> <span class="n">CROSS</span><span class="p">,</span> <span class="n">NAUGHT</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
+<span class="kn">from</span> <span class="nn">util</span> <span class="k">import</span> <span class="n">evaluate_players</span>
+<span class="kn">from</span> <span class="nn">tic_tac_toe.TFSessionManager</span> <span class="k">import</span> <span class="n">TFSessionManager</span>
+<span class="kn">from</span> <span class="nn">tic_tac_toe.RandomPlayer</span> <span class="k">import</span> <span class="n">RandomPlayer</span>
+<span class="kn">from</span> <span class="nn">tic_tac_toe.EGreedyNNQPlayer</span> <span class="k">import</span> <span class="n">EGreedyNNQPlayer</span>
+<span class="kn">from</span> <span class="nn">tic_tac_toe.MinMaxAgent</span> <span class="k">import</span> <span class="n">MinMaxAgent</span>
 
-<span class="k">def</span> <span class="nf">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">):</span>
-    <span class="n">display</span><span class="p">(</span><span class="n">HTML</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    &lt;style&gt;</span>
-<span class="s2">    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {</span>
-<span class="s2">      border: 1px  black solid !important;</span>
-<span class="s2">      color: black !important;</span>
-<span class="s2">    }</span>
-<span class="s2">    &lt;/style&gt;</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="o">+</span><span class="n">board</span><span class="o">.</span><span class="n">html_str</span><span class="p">()))</span>
-</pre></div>
+<span class="n">tf</span><span class="o">.</span><span class="n">reset_default_graph</span><span class="p">()</span>
 
-</div>
-</div>
-</div>
+<span class="n">nnplayer</span> <span class="o">=</span> <span class="n">EGreedyNNQPlayer</span><span class="p">(</span><span class="s2">&quot;QLearner1&quot;</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">reward_discount</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">random_move_decrease</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>
+<span class="n">mm_player</span> <span class="o">=</span> <span class="n">MinMaxAgent</span><span class="p">()</span>
+<span class="n">rndplayer</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
 
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>We can now create a new board and print it in all its empty glory:</p>
+<span class="n">TFSessionManager</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">Session</span><span class="p">())</span>
+<span class="n">TFSessionManager</span><span class="o">.</span><span class="n">get_session</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">global_variables_initializer</span><span class="p">())</span>
 
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">()</span>
-<span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-</pre></div>
+<span class="n">game_number</span><span class="p">,</span> <span class="n">p1_wins</span><span class="p">,</span> <span class="n">p2_wins</span><span class="p">,</span> <span class="n">draws</span> <span class="o">=</span> <span class="n">evaluate_players</span><span class="p">(</span><span class="n">nnplayer</span><span class="p">,</span> <span class="n">mm_player</span><span class="p">,</span> <span class="n">num_battles</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">p</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">game_number</span><span class="p">,</span> <span class="n">draws</span><span class="p">,</span> <span class="s1">&#39;r-&#39;</span><span class="p">,</span> <span class="n">game_number</span><span class="p">,</span> <span class="n">p1_wins</span><span class="p">,</span> <span class="s1">&#39;g-&#39;</span><span class="p">,</span> <span class="n">game_number</span><span class="p">,</span> <span class="n">p2_wins</span><span class="p">,</span> <span class="s1">&#39;b-&#39;</span><span class="p">)</span>
 
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Time to make a move. We use the methods <code>random_empty_spot</code> and <code>move</code> to find a random empty spot on the board and put a <code>CROSS</code> there. We then print the board to confirm:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">board</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">(),</span> <span class="n">CROSS</span><span class="p">)</span>
-<span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Let's extend that to play a whole game.</p>
-<p>We reset the board state and play alternating CROSS and NAUGHT until the game is either won by one side or a draw. We print the board after each move. After the game has finished print out who won.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">board</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-<span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
-   <span class="n">_</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">(),</span> <span class="n">CROSS</span><span class="p">)</span>
-   <span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-   <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-       <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-           <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Game is a draw&quot;</span><span class="p">)</span>
-       <span class="k">else</span><span class="p">:</span>
-           <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cross won!&quot;</span><span class="p">)</span>
-   <span class="k">else</span><span class="p">:</span>
-       <span class="n">_</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="o">.</span><span class="n">random_empty_spot</span><span class="p">(),</span> <span class="n">NAUGHT</span><span class="p">)</span>
-       <span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-       <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-               <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Game is a draw&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-               <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Naught won!&quot;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>&ensp;</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>&ensp;</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>&ensp;</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>&ensp;</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>o</td><td>x</td></tr><tr><td>x</td><td>o</td><td>x</td></tr><tr><td>x</td><td>&ensp;</td><td>o</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>Naught won!
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>let's wrap this code in a utility function called <code>play_game</code>. It takes a board and 2 players and plays a complete game. It returns the result of the game at the end. We will use this going forward to evaluate our computer players.</p>
-<p>Let's test the new function by playing a game:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.Player</span> <span class="k">import</span> <span class="n">Player</span>
-
-
-<span class="k">def</span> <span class="nf">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">:</span> <span class="n">Board</span><span class="p">,</span> <span class="n">player1</span><span class="p">:</span> <span class="n">Player</span><span class="p">,</span> <span class="n">player2</span><span class="p">:</span> <span class="n">Player</span><span class="p">):</span>
-    <span class="n">player1</span><span class="o">.</span><span class="n">new_game</span><span class="p">(</span><span class="n">CROSS</span><span class="p">)</span>
-    <span class="n">player2</span><span class="o">.</span><span class="n">new_game</span><span class="p">(</span><span class="n">NAUGHT</span><span class="p">)</span>
-    <span class="n">board</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-    
-    <span class="n">finished</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">while</span> <span class="ow">not</span> <span class="n">finished</span><span class="p">:</span>
-        <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">player1</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-                <span class="n">final_result</span> <span class="o">=</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">final_result</span> <span class="o">=</span>  <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">,</span> <span class="n">finished</span> <span class="o">=</span> <span class="n">player2</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">finished</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span><span class="p">:</span>
-                    <span class="n">final_result</span> <span class="o">=</span>  <span class="n">GameResult</span><span class="o">.</span><span class="n">DRAW</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">final_result</span> <span class="o">=</span>  <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span>
-        
-    <span class="n">player1</span><span class="o">.</span><span class="n">final_result</span><span class="p">(</span><span class="n">final_result</span><span class="p">)</span>
-    <span class="n">player2</span><span class="o">.</span><span class="n">final_result</span><span class="p">(</span><span class="n">final_result</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">final_result</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h1 id="The-RandomPlayer">The RandomPlayer<a class="anchor-link" href="#The-RandomPlayer">&#182;</a></h1><p>Time to introduce our first contender, the <a href="https://github.com/fcarsten/tic-tac-toe/blob/master/tic_tac_toe/RandomPlayer.py"><code>RandomPlayer</code></a>. It looks for a random empty spot on the board and puts its piece there - pretty much the same way as we just did above; just wrapped into a class.</p>
-<p>Let's import it, create 2 instances and let them play a game:</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">tic_tac_toe.RandomPlayer</span> <span class="k">import</span> <span class="n">RandomPlayer</span>
-
-<span class="n">player1</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
-<span class="n">player2</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">player1</span><span class="p">,</span> <span class="n">player2</span><span class="p">)</span>
-<span class="n">print_board</span><span class="p">(</span><span class="n">board</span><span class="p">)</span>
-<span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cross won&quot;</span><span class="p">)</span>
-<span class="k">elif</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Naught won&quot;</span><span class="p">)</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Draw&quot;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-
-<div class="output_html rendered_html output_subarea ">
-
-    <style>
-    .rendered_html table, .rendered_html th, .rendered_html tr, .rendered_html td {
-      border: 1px  black solid !important;
-      color: black !important;
-    }
-    </style>
-    <table border="1"><tr><td>o</td><td>&ensp;</td><td>x</td></tr><tr><td>o</td><td>x</td><td>&ensp;</td></tr><tr><td>x</td><td>&ensp;</td><td>&ensp;</td></tr></table>
-</div>
-
-</div>
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>Cross won
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h1 id="Establishing-some-ground-truth.">Establishing some ground truth.<a class="anchor-link" href="#Establishing-some-ground-truth.">&#182;</a></h1><p>Using the code we introduced above we can now establish some ground truth: If we let 2 random players play against each other a large enough number of times, how many games do we expect to be won by <code>NAUGHT</code>, how many by <code>CROSS</code>, and how many do we expect to end in a draw?</p>
-<p>Going forward, building more intelligent players, we can then measure how much better they play compared to a random player.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">num_games</span> <span class="o">=</span> <span class="mi">100000</span>
-
-<span class="n">draw_count</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">cross_count</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">naught_count</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="n">p1</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
-<span class="n">p2</span> <span class="o">=</span> <span class="n">RandomPlayer</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_games</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">play_game</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">CROSS_WIN</span><span class="p">:</span>
-        <span class="n">cross_count</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">elif</span> <span class="n">result</span> <span class="o">==</span> <span class="n">GameResult</span><span class="o">.</span><span class="n">NAUGHT_WIN</span><span class="p">:</span>
-        <span class="n">naught_count</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">draw_count</span> <span class="o">+=</span> <span class="mi">1</span>
-        
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;After </span><span class="si">{}</span><span class="s2"> game we have draws: </span><span class="si">{}</span><span class="s2">, cross wins: </span><span class="si">{}</span><span class="s2">, and naught wins: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_games</span><span class="p">,</span> <span class="n">draw_count</span><span class="p">,</span> 
-                                                                        <span class="n">cross_count</span><span class="p">,</span> <span class="n">naught_count</span><span class="p">))</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Which gives percentages of draws : cross : naught of about </span><span class="si">{:.2%}</span><span class="s2"> : </span><span class="si">{:.2%}</span><span class="s2"> : </span><span class="si">{:.2%}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-    <span class="n">draw_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">,</span> <span class="n">cross_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">,</span> <span class="n">naught_count</span> <span class="o">/</span> <span class="n">num_games</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">TFSessionManager</span><span class="o">.</span><span class="n">set_session</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12305,10 +11914,123 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>After 100000 game we have draws: 12827, cross wins: 58313, and naught wins: 28860.
-Which gives percentages of draws : cross : naught of about 12.83% : 58.31% : 28.86%
+<pre>After 100 game we have draws: 41, Player 1 wins: 0, and Player 2 wins: 59.
+Which gives percentages of draws: 41.00%, Player 1 wins: 0.00%, and Player 2 wins:  59.00%
+After 100 game we have draws: 67, Player 1 wins: 0, and Player 2 wins: 33.
+Which gives percentages of draws: 67.00%, Player 1 wins: 0.00%, and Player 2 wins:  33.00%
+After 100 game we have draws: 9, Player 1 wins: 0, and Player 2 wins: 91.
+Which gives percentages of draws: 9.00%, Player 1 wins: 0.00%, and Player 2 wins:  91.00%
+After 100 game we have draws: 3, Player 1 wins: 0, and Player 2 wins: 97.
+Which gives percentages of draws: 3.00%, Player 1 wins: 0.00%, and Player 2 wins:  97.00%
+After 100 game we have draws: 0, Player 1 wins: 0, and Player 2 wins: 100.
+Which gives percentages of draws: 0.00%, Player 1 wins: 0.00%, and Player 2 wins:  100.00%
+After 100 game we have draws: 0, Player 1 wins: 0, and Player 2 wins: 100.
+Which gives percentages of draws: 0.00%, Player 1 wins: 0.00%, and Player 2 wins:  100.00%
+After 100 game we have draws: 0, Player 1 wins: 0, and Player 2 wins: 100.
+Which gives percentages of draws: 0.00%, Player 1 wins: 0.00%, and Player 2 wins:  100.00%
+After 100 game we have draws: 0, Player 1 wins: 0, and Player 2 wins: 100.
+Which gives percentages of draws: 0.00%, Player 1 wins: 0.00%, and Player 2 wins:  100.00%
+After 100 game we have draws: 26, Player 1 wins: 0, and Player 2 wins: 74.
+Which gives percentages of draws: 26.00%, Player 1 wins: 0.00%, and Player 2 wins:  74.00%
+After 100 game we have draws: 36, Player 1 wins: 0, and Player 2 wins: 64.
+Which gives percentages of draws: 36.00%, Player 1 wins: 0.00%, and Player 2 wins:  64.00%
+After 100 game we have draws: 33, Player 1 wins: 0, and Player 2 wins: 67.
+Which gives percentages of draws: 33.00%, Player 1 wins: 0.00%, and Player 2 wins:  67.00%
+After 100 game we have draws: 37, Player 1 wins: 0, and Player 2 wins: 63.
+Which gives percentages of draws: 37.00%, Player 1 wins: 0.00%, and Player 2 wins:  63.00%
+After 100 game we have draws: 35, Player 1 wins: 0, and Player 2 wins: 65.
+Which gives percentages of draws: 35.00%, Player 1 wins: 0.00%, and Player 2 wins:  65.00%
+After 100 game we have draws: 0, Player 1 wins: 0, and Player 2 wins: 100.
+Which gives percentages of draws: 0.00%, Player 1 wins: 0.00%, and Player 2 wins:  100.00%
+After 100 game we have draws: 23, Player 1 wins: 0, and Player 2 wins: 77.
+Which gives percentages of draws: 23.00%, Player 1 wins: 0.00%, and Player 2 wins:  77.00%
+After 100 game we have draws: 46, Player 1 wins: 0, and Player 2 wins: 54.
+Which gives percentages of draws: 46.00%, Player 1 wins: 0.00%, and Player 2 wins:  54.00%
+After 100 game we have draws: 23, Player 1 wins: 0, and Player 2 wins: 77.
+Which gives percentages of draws: 23.00%, Player 1 wins: 0.00%, and Player 2 wins:  77.00%
+After 100 game we have draws: 16, Player 1 wins: 0, and Player 2 wins: 84.
+Which gives percentages of draws: 16.00%, Player 1 wins: 0.00%, and Player 2 wins:  84.00%
+After 100 game we have draws: 13, Player 1 wins: 0, and Player 2 wins: 87.
+Which gives percentages of draws: 13.00%, Player 1 wins: 0.00%, and Player 2 wins:  87.00%
+After 100 game we have draws: 5, Player 1 wins: 0, and Player 2 wins: 95.
+Which gives percentages of draws: 5.00%, Player 1 wins: 0.00%, and Player 2 wins:  95.00%
+After 100 game we have draws: 15, Player 1 wins: 0, and Player 2 wins: 85.
+Which gives percentages of draws: 15.00%, Player 1 wins: 0.00%, and Player 2 wins:  85.00%
+After 100 game we have draws: 76, Player 1 wins: 0, and Player 2 wins: 24.
+Which gives percentages of draws: 76.00%, Player 1 wins: 0.00%, and Player 2 wins:  24.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
+After 100 game we have draws: 100, Player 1 wins: 0, and Player 2 wins: 0.
+Which gives percentages of draws: 100.00%, Player 1 wins: 0.00%, and Player 2 wins:  0.00%
 </pre>
 </div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
 </div>
 
 </div>
@@ -12319,32 +12041,16 @@ Which gives percentages of draws : cross : naught of about 12.83% : 58.31% : 28.
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<hr>
-<h2 id="Established-Baseline">Established Baseline<a class="anchor-link" href="#Established-Baseline">&#182;</a></h2><p>In addition to the statistics computed above, we also know that if both players always make the best possible move, a game of Tic Tac Toe will always end in a draw. The gives us the following baseline:</p>
-<table>
-<thead><tr>
-<th>Player</th>
-<th>P1 Win</th>
-<th>P2 Win</th>
-<th>Draw</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Perfect</td>
-<td>0%</td>
-<td>0%</td>
-<td>100%</td>
-</tr>
-<tr>
-<td>Random</td>
-<td>58%</td>
-<td>13%</td>
-<td>29%</td>
-</tr>
-</tbody>
-</table>
-<p>In the following parts we will aim to create players that play perfectly. Where we don't quite achieve that, we will still be able to at least measure how better than the <code>RandomPlayer</code> our player is.</p>
+<p>Feel encouraged to play with the example above and try out different combinations. Overall I didn't notice much change - on occasion however it seemsed to be able to break out of a complete losing streak and find a strategy that resulted in 100% draws. To see if this is statistically significant however would require a lot of runs. Many more than I have time or patience for. Especially since it clearly didn't actually solve the problem to a degree that is acceptable.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In the next part we will look at using a more sophisticated network topology.</p>
 
 </div>
 </div>
