@@ -67,7 +67,7 @@ def battle(player1: Player, player2: Player, num_games: int = 100000, silent: bo
 
 
 def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100,
-                     writer: tf.summary.FileWriter = None):
+                     writer: tf.summary.FileWriter = None, silent:bool = False):
     p1_wins = []
     p2_wins = []
     draws = []
@@ -75,7 +75,7 @@ def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=1
     game_counter = 0
 
     for i in range(num_battles):
-        p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
+        p1win, p2win, draw = battle(p1, p2, games_per_battle, silent)
         p1_wins.append(p1win)
         p2_wins.append(p2win)
         draws.append(draw)
