@@ -4,7 +4,8 @@ from tic_tac_toe.Player import Player
 from tic_tac_toe.TFSessionManager import TFSessionManager
 import tensorflow as tf
 
-def evaluate_players(p1 : Player, p2 : Player, games_per_battle = 100, num_battles = 100):
+
+def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100):
     board = Board()
 
     p1_wins = []
@@ -16,16 +17,17 @@ def evaluate_players(p1 : Player, p2 : Player, games_per_battle = 100, num_battl
     TFSessionManager.set_session(tf.Session())
     TFSessionManager.get_session().run(tf.global_variables_initializer())
 
-    for i in range (num_battles):
+    for i in range(num_battles):
         p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
         p1_wins.append(p1win)
         p2_wins.append(p2win)
         draws.append(draw)
-        game_counter=game_counter+1
+        game_counter = game_counter + 1
         game_number.append(game_counter)
 
     TFSessionManager.set_session(None)
     return game_number, p1_wins, p2_wins, draws
+
 
 import matplotlib.pyplot as plt
 from tic_tac_toe.RandomPlayer import RandomPlayer
@@ -38,7 +40,7 @@ nnplayer = NNQPlayer("QLearner1", learning_rate=0.01, win_value=100.0, loss_valu
 mm_player = MinMaxAgent()
 rndplayer = RandomPlayer()
 
-game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nnplayer, num_battles=10000) #, num_battles = 20)
+game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nnplayer, num_battles=10000)  # , num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, mm_player) #, num_battles = 20)
 
 p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')

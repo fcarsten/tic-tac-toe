@@ -90,7 +90,7 @@ class EGreedyNNQPlayer(Player):
 
     def __init__(self, name: str, reward_discount: float = 0.95, win_value: float = 1.0, draw_value: float = 0.0,
                  loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True,
-                 random_move_prob: float=0.95, random_move_decrease: float= 0.95):
+                 random_move_prob: float = 0.95, random_move_decrease: float = 0.95):
         """
         Constructor for the Neural Network player.
         :param name: The name of the player. Also the name of its TensorFlow scope. Needs to be unique
@@ -116,8 +116,8 @@ class EGreedyNNQPlayer(Player):
         self.name = name
         self.nn = QNetwork(name, learning_rate)
         self.training = training
-        self.random_move_prob=random_move_prob
-        self.random_move_decrease=random_move_decrease
+        self.random_move_prob = random_move_prob
+        self.random_move_decrease = random_move_decrease
         super().__init__()
 
     def new_game(self, side: int):
@@ -178,8 +178,8 @@ class EGreedyNNQPlayer(Player):
         for index, p in enumerate(qvalues):
             if not board.is_legal(index):
                 probs[index] = -1
-            elif probs[index]<0:
-                probs[index]= 0.0
+            elif probs[index] < 0:
+                probs[index] = 0.0
 
         # Most of the time our next move is the one with the highest probability after removing all illegal ones.
         # Occasionally, however we randomly chose a random move to encourage exploration

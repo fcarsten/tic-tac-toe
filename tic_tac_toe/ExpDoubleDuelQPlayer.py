@@ -151,7 +151,7 @@ class ExpDoubleDuelQPlayer(Player):
                         (state == EMPTY).astype(int)])
         return res.reshape(-1)
 
-    def create_graph_copy_op(self, src: str, target: str, tau: float) -> tf.Tensor:
+    def create_graph_copy_op(self, src: str, target: str, tau: float) -> [tf.Tensor]:
         """
         Creates and returns a TensorFlow Operation that copies the content of all trainable variables from the
         sub-graph in scope `src` to the sub-graph in scope `target`. Both graphs need to have the same topology and
@@ -162,7 +162,7 @@ class ExpDoubleDuelQPlayer(Player):
         :param src: The name of the scope from which to copy the variables
         :param target: The name of the scope to which the variables are copied
         :param tau: A float value between 0 and 1 which determines the weight of src and target for the new value
-        :return: A TensorFlow tensor for the copying operation
+        :return: A list of TensorFlow tensors for the copying operations
         """
         src_vars = tf.trainable_variables(src)
         target_vars = tf.trainable_variables(target)

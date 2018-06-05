@@ -36,7 +36,9 @@ def play_game(board: Board, player1: Player, player2: Player):
                 else:
                     final_result = GameResult.NAUGHT_WIN
 
+    # noinspection PyUnboundLocalVariable
     player1.final_result(final_result)
+    # noinspection PyUnboundLocalVariable
     player2.final_result(final_result)
     return final_result
 
@@ -67,7 +69,7 @@ def battle(player1: Player, player2: Player, num_games: int = 100000, silent: bo
 
 
 def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=100,
-                     writer: tf.summary.FileWriter = None, silent:bool = False):
+                     writer: tf.summary.FileWriter = None, silent: bool = False):
     p1_wins = []
     p2_wins = []
     draws = []

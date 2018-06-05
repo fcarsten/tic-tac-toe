@@ -25,7 +25,7 @@ class TFSessionManager:
         return TFSessionManager.session
 
     @classmethod
-    def set_session(cls, session : tf.Session):
+    def set_session(cls, session: tf.Session):
         """
         Explicitly sets the input parameter session as the one session to be shared by all instances.
         If a session already was set previously and it is not identical with the new one, the old session

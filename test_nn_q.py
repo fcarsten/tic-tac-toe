@@ -14,7 +14,6 @@ nnplayer2 = NNQPlayer("QLearner2")
 
 deep_nnplayer = NNQPlayer("DeepQLearner1")
 
-
 rndplayer = RandomPlayer()
 mm_player = MinMaxAgent()
 tq_player = TQPlayer()
@@ -44,23 +43,23 @@ p2 = p2_t
 # nnplayer.training= False
 # nnplayer2.training= False
 
-for i in range (num_training_battles):
+for i in range(num_training_battles):
     p1win, p2win, draw = battle(p1_t, p2_t, games_per_battle, False)
     p1_wins.append(p1win)
     p2_wins.append(p2win)
     draws.append(draw)
-    game_counter=game_counter+1
+    game_counter = game_counter + 1
     game_number.append(game_counter)
 
 # nnplayer.training= False
 # nnplayer2.training= False
 
 for i in range(num_battles):
-    p1win, p2win, draw = battle(p1, p2,  games_per_battle, False)
+    p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
     p1_wins.append(p1win)
     p2_wins.append(p2win)
     draws.append(draw)
-    game_counter=game_counter+1
+    game_counter = game_counter + 1
     game_number.append(game_counter)
 
 writer.close()

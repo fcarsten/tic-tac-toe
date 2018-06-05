@@ -20,9 +20,9 @@ class GameResult(Enum):
 # Values to encode the current content of a field on the board. A field can be empty, contain a naught, or
 # contain a cross
 #
-EMPTY = 0   # type: int
+EMPTY = 0  # type: int
 NAUGHT = 1  # type: int
-CROSS = 2   # type: int
+CROSS = 2  # type: int
 
 #
 # Define the length and width of the board. Has to be 3 at the moment, or some parts of the code will break. Also,
@@ -30,7 +30,7 @@ CROSS = 2   # type: int
 # to make the code more readable
 #
 BOARD_DIM = 3  # type: int
-BOARD_SIZE = BOARD_DIM * BOARD_DIM # type: int
+BOARD_SIZE = BOARD_DIM * BOARD_DIM  # type: int
 
 
 class Board:
@@ -192,7 +192,8 @@ class Board:
         Used internally to check whether either side has won the game.
         :param pos: The position in 1D from which to check if we have 3 in a row
         :param direction: The direction in 2D in which to check for 3 in a row
-        :return: Whether there are 3 in a row of the same side staring from position pos and going in direction direction
+        :return: Whether there are 3 in a row of the same side staring from position pos and going in direction
+        `direction`
         """
         c = self.state[pos]
         if c == EMPTY:
@@ -243,7 +244,8 @@ class Board:
         return '&ensp' instead of ' ' to enforce a white space in the case of HTML output
         :param pos: The position in 1D for which we want a character representation
         :param html: Flag indicating whether we want an ASCII (False) or HTML (True) character
-        :return: 'x', 'o', or ' ' depending on what piece is on 1D position pos. Ig `html` is True, return '&ensp' instead of ' '
+        :return: 'x', 'o', or ' ' depending on what piece is on 1D position pos. Ig `html` is True,
+        return '&ensp' instead of ' '
         """
         if (self.state[pos]) == EMPTY:
             return '&ensp;' if html else ' '
@@ -289,7 +291,7 @@ class Board:
         board_str = ""
         for i in range(3):
             board_str += self.state_to_char(i * 3) + '|' + self.state_to_char(i * 3 + 1) \
-                        + '|' + self.state_to_char(i * 3 + 2) + "\n"
+                         + '|' + self.state_to_char(i * 3 + 2) + "\n"
 
             if i != 2:
                 board_str += "-----\n"

@@ -17,7 +17,6 @@ class RndMinMaxAgent(Player):
     Already evaluated board positions are cached for efficiency.
     """
 
-
     WIN_VALUE = 1
     DRAW_VALUE = 0
     LOSS_VALUE = -1
@@ -119,7 +118,6 @@ class RndMinMaxAgent(Player):
         board_hash = board.hash_value()
         if board_hash in self.cache:
             return random.choice(self.cache[board_hash])
-
 
         #
         # If the game has already finished we return. Otherwise we look at possible continuations

@@ -16,7 +16,6 @@ class MinMaxAgent(Player):
     Already evaluated board positions are cached for efficiency.
     """
 
-
     WIN_VALUE = 1
     DRAW_VALUE = 0
     LOSS_VALUE = -1
