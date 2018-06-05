@@ -83,8 +83,6 @@ class QNetwork:
             self.target_q = tf.placeholder(shape=[None], dtype=tf.float32, name='target')
             net = self.input_positions
 
-            # net = tf.transpose(net, [0,3,1,2])
-
             net = tf.layers.conv2d(inputs=net, filters=128, kernel_size=3,
                                    kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
                                    data_format="channels_last", padding='SAME', activation=tf.nn.relu)
@@ -94,13 +92,6 @@ class QNetwork:
             net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
                                    kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
                                    data_format="channels_last", padding='SAME', activation=tf.nn.relu)
-            # net = tf.layers.conv2d(inputs=net, filters=64, kernel_size=3,
-            #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
-            # net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=3,
-            #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
-            #
-            # net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=2,
-            #                        data_format= "channels_last", padding='SAME', activation=tf.nn.relu)
 
             net = tf.layers.flatten(net)
 
@@ -139,16 +130,36 @@ class QNetwork:
 
 
 class ReplayBuffer:
+    """
+    This class manages the Experience Replay buffer for the Neural Network player
+    """
+
     def __init__(self, buffer_size=3000):
+        """
+        Creates a new `ReplayBuffer` of size `buffer_size`.
+        :param buffer_size:
+        """
         self.buffer = []
         self.buffer_size = buffer_size
 
     def add(self, experience: []):
+        """
+        Adds a list of experience Tuples to the buffer. If this operation causes the buffer to be longer than its
+        defined maximum, old entries will be evicted until the maximum length is achieved. Entries are added and
+        evicated on a FIFO basis.
+        :param experience: A list of experience tuples to be added to the replay buffer
+        """
         if len(self.buffer) + len(experience) >= self.buffer_size:
             self.buffer[0:1] = []
         self.buffer.append(experience)
 
     def sample(self, size) -> []:
+        """
+        Returns a random sample of `size` entries from the Replay Buffer. If there are less than `size` entries
+        in the buffer, all entries will be returned.
+        :param size: Number of sample to be returned
+        :return: List of `size` number of randomly sampled  previously stored entries.
+        """
         size = min(len(self.buffer), size)
         return random.sample(self.buffer, size)
 
@@ -175,7 +186,19 @@ class DeepExpDoubleDuelQPlayer(Player):
 
         return res
 
-    def create_graph_copy_op(self, src: str, target: str, tau: float):
+    def create_graph_copy_op(self, src: str, target: str, tau: float) -> tf.Tensor:
+        """
+        Creates and returns a TensorFlow Operation that copies the content of all trainable variables from the
+        sub-graph in scope `src` to the sub-graph in scope `target`. Both graphs need to have the same topology and
+        the trainable variable been added in the same order for this to work.
+
+        The value `tau` determines to which degree the src value will replace the target value according to the
+        foumla: nee_value = src * (1-tau) + target * tau
+        :param src: The name of the scope from which to copy the variables
+        :param target: The name of the scope to which the variables are copied
+        :param tau: A float value between 0 and 1 which determines the weight of src and target for the new value
+        :return: A TensorFlow tensor for the copying operation
+        """
         src_vars = tf.trainable_variables(src)
         target_vars = tf.trainable_variables(target)
 
@@ -191,6 +214,9 @@ class DeepExpDoubleDuelQPlayer(Player):
                  pre_training_games: int = 500, tau: float = 0.001):
         """
         Constructor for the Neural Network player.
+        :param batch_size: The number of samples from the Experience Replay Buffer to be used per training operation
+        :param pre_training_games: The number of games played completely radnomly before using the Neural Network
+        :param tau: The factor by which the target Q graph gets updated after each training operation
         :param name: The name of the player. Also the name of its TensorFlow scope. Needs to be unique
         :param reward_discount: The factor by which we discount the maximum Q value of the following state
         :param win_value: The reward for winning a game
@@ -243,6 +269,11 @@ class DeepExpDoubleDuelQPlayer(Player):
         self.action_log = []
 
     def add_game_to_replay_buffer(self, reward: float):
+        """
+        Adds the game history of the current game to the replay buffer. This method is called internally
+        after the game has finished
+        :param reward: The reward for the final move in the game
+        """
         game_length = len(self.action_log)
 
         if reward == self.win_value:
@@ -260,17 +291,26 @@ class DeepExpDoubleDuelQPlayer(Player):
 
     def get_probs(self, input_pos: [np.ndarray], network: QNetwork) -> ([float], [float]):
         """
-        Feeds the feature vector `input_pos` which encodes a board state into the Neural Network and computes the
+        Feeds the feature vectors `input_pos` (which encode a board states) into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).
         :param network: The network to get probabilities from
-        :param input_pos: The feature vector to be fed into the Neural Network.
-        :return: A tuple of probabilities and q values of all actions (including illegal ones).
+        :param input_pos: A list of feature vectors to be fed into the Neural Network.
+        :return: A list of tuples of probabilities and q values of all actions (including illegal ones).
         """
         probs, qvalues = TFSN.get_session().run([network.probabilities, network.q_values],
                                                 feed_dict={network.input_positions: input_pos})
         return probs, qvalues
 
     def get_valid_probs(self, input_pos: [np.ndarray], network: QNetwork, boards: [Board]) -> ([float], [float]):
+        """
+        Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
+        by setting the probability of all illegal moves in the current position to -1.
+        It returns a tuple of post-processed probabilities and q values.
+        :param input_pos: The board position to be evaluated as feature vector for the Neural Network
+        :param network: The Neural Network
+        :param boards: A list of corresponding Board objects for testing if a move is illegal.
+        :return: A tuple of post-processed probabilities and q values. Probabilities for illegal moves are set to -1.
+        """
         probabilities, qvals = self.get_probs(input_pos, network)
         qvals = np.copy(qvals)
         probabilities = np.copy(probabilities)
