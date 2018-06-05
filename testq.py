@@ -1,4 +1,3 @@
-from IPython.display import HTML, display
 from tic_tac_toe.Board import Board, GameResult, CROSS, NAUGHT, EMPTY
 from util import print_board, play_game, battle
 from tic_tac_toe.RandomPlayer import RandomPlayer

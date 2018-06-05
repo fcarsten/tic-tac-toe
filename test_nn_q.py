@@ -1,12 +1,9 @@
-from IPython.display import HTML, display
 from tic_tac_toe.Board import Board, GameResult, CROSS, NAUGHT, EMPTY
 from util import print_board, play_game, battle
 from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
-from tic_tac_toe.RndMinMaxAgent import RndMinMaxAgent
 from tic_tac_toe.TabularQPlayer import TQPlayer
 from tic_tac_toe.SimpleNNQPlayer import NNQPlayer
-from tic_tac_toe.SimpleDeepNNQPlayer import DeepNNQPlayer
 from tic_tac_toe.TFSessionManager import TFSessionManager
 import matplotlib.pyplot as plt
 import tensorflow as tf
