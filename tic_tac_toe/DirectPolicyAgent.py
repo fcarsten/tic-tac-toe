@@ -143,8 +143,8 @@ class DirectPolicyAgent(Player):
                         (state == EMPTY).astype(int)])
         return res.reshape(-1)
 
-    def __init__(self, name, gamma: float = 0.1, learning_rate: float = 0.001, win_value: float = 2.0,
-                 loss_value: float = -2.0, draw_value: float = 0.0, training: bool = True,
+    def __init__(self, name, gamma: float = 0.1, learning_rate: float = 0.001, win_value: float = 1.0,
+                 loss_value: float = -1.0, draw_value: float = 0.5, training: bool = True,
                  random_move_probability: float = 0.9,
                  random_move_decrease: float = 0.9997, pre_training_games: int = 500, batch_size: int=60):
         super().__init__()
