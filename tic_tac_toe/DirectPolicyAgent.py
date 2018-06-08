@@ -58,8 +58,8 @@ class PolicyGradientNetwork:
         with tf.variable_scope(self.name):
             self.state_in = tf.placeholder(shape=[None, BOARD_SIZE * 3], dtype=tf.float32)
 
-            hidden = self.add_dense_layer(self.state_in, BOARD_SIZE * 3 * 20, activation_fn=tf.nn.relu)
-            hidden = self.add_dense_layer(hidden, BOARD_SIZE * 3 * 20, activation_fn=tf.nn.relu)
+            hidden = self.add_dense_layer(self.state_in, BOARD_SIZE * 3 * 9, activation_fn=tf.nn.relu)
+            # hidden = self.add_dense_layer(hidden, BOARD_SIZE * 3 * 20, activation_fn=tf.nn.relu)
             self.logits = self.add_dense_layer(hidden, 9, activation_fn=None)
 
             self.output = tf.nn.softmax(self.logits)
@@ -75,7 +75,7 @@ class PolicyGradientNetwork:
             self.indexes = tf.range(0, tf.shape(self.output)[0]) * tf.shape(self.output)[1] + self.action_holder
             self.responsible_outputs = tf.gather(tf.reshape(self.output, [-1]), self.indexes)
 
-            self.loss = - tf.reduce_mean(tf.log(self.responsible_outputs + 1e-7) * self.reward_holder)
+            self.loss = - tf.reduce_mean(tf.log(self.responsible_outputs + 1e-9) * self.reward_holder)
             tf.summary.scalar("policy_loss", self.loss)
 
             self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=self.name),
@@ -143,9 +143,9 @@ class DirectPolicyAgent(Player):
                         (state == EMPTY).astype(int)])
         return res.reshape(-1)
 
-    def __init__(self, name, gamma: float = 0.1, learning_rate: float = 0.001, win_value: float = 1.0,
-                 loss_value: float = -1.0, draw_value: float = 0.5, training: bool = True,
-                 random_move_probability: float = 0.9,
+    def __init__(self, name, gamma: float = 0.1, learning_rate: float = 0.001, win_value: float = 10.0,
+                 loss_value: float = -10.0, draw_value: float = 10.0, training: bool = True,
+                 random_move_probability: float = 0.9, beta: float=0.000001,
                  random_move_decrease: float = 0.9997, pre_training_games: int = 500, batch_size: int=60):
         super().__init__()
         self.gamma = gamma
@@ -171,7 +171,7 @@ class DirectPolicyAgent(Player):
         self.replay_buffer_draw = ReplayBuffer()
 
         self.name = name
-        self.nn = PolicyGradientNetwork(name)
+        self.nn = PolicyGradientNetwork(name, learning_rate, beta)
         self.writer = None
 
     def new_game(self, side):
