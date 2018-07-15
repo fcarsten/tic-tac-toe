@@ -187,7 +187,7 @@ class DirectPolicyAgent(Player):
     def get_valid_probs(self, input_pos: [np.ndarray], boards: [Board]) -> ([float], [float]):
         """
         Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
-        by setting the probability of all illegal moves in the current position to -1.
+        by setting the probability of all illegal moves in the current position to 0.
         It returns a tuple of post-processed probabilities and q values.
         :param input_pos: The board position to be evaluated as feature vector for the Neural Network
         :param boards: A list of corresponding Board objects for testing if a move is illegal.
@@ -203,11 +203,9 @@ class DirectPolicyAgent(Player):
         for prob, b in zip(probabilities, boards):
             for index, p in enumerate(prob):
                 if not b.is_legal(index):
-                    prob[index] = -1
-                elif prob[index] < 0:
-                    prob[index] = 0.0
-
-        return probabilities
+                    prob[index] = 0
+        res = probabilities / probabilities.sum(axis=1, keepdims=True)
+        return res
 
     def move(self, board):
         self.board_position_log.append(board.state.copy())
@@ -219,11 +217,15 @@ class DirectPolicyAgent(Player):
         # Most of the time our next move is the one with the highest probability after removing all illegal ones.
         # Occasionally, however we randomly chose a random move to encourage exploration
         if (self.training is True) and \
-                ((self.game_counter < self.pre_training_games) or
-                 (np.random.rand(1) < self.random_move_probability)):
+                (self.game_counter < self.pre_training_games):
             move = board.random_empty_spot()
         else:
-            move = np.argmax(probs)
+            if np.isnan(probs).any():
+                move = board.random_empty_spot()
+            else:
+                move = np.random.choice(np.arange(len(probs)), p=probs)
+            if not board.is_legal(move):
+                print("Illegal move!")
 
         # We record the action we selected as well as the Q values of the current state for later use when
         # adjusting NN weights.
