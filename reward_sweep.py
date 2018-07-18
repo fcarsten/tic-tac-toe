@@ -30,9 +30,9 @@ for loss_reward in range(min_reward, max_reward):
 
         sess.run(tf.global_variables_initializer())
 
-        game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rm_player, num_battles=100, silent=True)  # , num_battles = 20)
+        game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rm_player, num_battles=1000, silent=True)  # , num_battles = 20)
 
-        print("With loss reward {} and draw reward {} we get draws:  {:.2%}".format(
+        print("With loss reward {} and draw reward {} we get draws: {}".format(
             loss_reward, draw_reward, draws[-1]))
 
         rewards[loss_reward-min_reward, draw_reward-min_reward] = draws[-1]
