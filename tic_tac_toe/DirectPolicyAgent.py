@@ -6,21 +6,28 @@ from tic_tac_toe.TFSessionManager import TFSessionManager as TFSN
 import random
 
 
-# Simple Reinforcement Learning in Tensorflow Part 2-b by Arthur Juliani:
-# Vanilla Policy Gradient Agent
-# This tutorial contains a simple example of how to build a policy-gradient based agent that can solve the CartPole
-# problem. For more information, see this Medium post. This implementation is generalizable to more than two actions.
-# For more Reinforcement Learning algorithms, including DQN and Model-based learning in Tensorflow, see Arthur Juliani's
-# Github repo: DeepRL-Agents: https://github.com/awjuliani/DeepRL-Agents
+# Tic Tac Toe Policy Gradient Agent
 #
-# Source: https://github.com/awjuliani/DeepRL-Agents/blob/master/Vanilla-Policy.ipynb
+# This class implements a Tic Tac Toe playing Neural Network that learns by direct policy gradient descent
+# It is largely based on Arthur Juliani's github repo: DeepRL-Agents: https://github.com/awjuliani/DeepRL-Agents
+#
+# Based on: https://github.com/awjuliani/DeepRL-Agents/blob/master/Vanilla-Policy.ipynb
 
 
 # The Policy-Based Agent
 
 class PolicyGradientNetwork:
+    """
+    The Policy Gradient TensorFlow Network
+    """
 
     def __init__(self, name, learning_rate=0.001, beta: float = 0.00001):
+        """
+        Constructor for the Policy Gradient Network
+        :param name: Name and TensorFlow scope of the network.
+        :param learning_rate: Learning rate of the TensorFlow Optimizer
+        :param beta: Factor multiplied with the Regularization loss
+        """
         self.state_in = None
         self.logits = None
         self.output = None
@@ -55,6 +62,10 @@ class PolicyGradientNetwork:
                                name=name)
 
     def build_graph(self):
+        """
+        Builds the actual Network Graph
+        """
+
         with tf.variable_scope(self.name):
             self.state_in = tf.placeholder(shape=[None, BOARD_SIZE * 3], dtype=tf.float32)
 
@@ -67,7 +78,7 @@ class PolicyGradientNetwork:
 
             self.chosen_action = tf.argmax(self.output, 1)
 
-            # The next six lines establish the training proceedure. We feed the reward and chosen action
+            # The next six lines establish the training procedure. We feed the reward and chosen action
             # into the network to compute the loss, and use it to update the network.
             self.reward_holder = tf.placeholder(shape=[None], dtype=tf.float32)
             self.action_holder = tf.placeholder(shape=[None], dtype=tf.int32)
@@ -145,8 +156,24 @@ class DirectPolicyAgent(Player):
 
     def __init__(self, name, gamma: float = 0.1, learning_rate: float = 0.001, win_value: float = 1.0,
                  loss_value: float = 0.0, draw_value: float = 0.5, training: bool = True,
-                 random_move_probability: float = 0.9, beta: float=0.000001,
-                 random_move_decrease: float = 0.9997, pre_training_games: int = 500, batch_size: int=60):
+                 random_move_probability: float = 0.9, beta: float = 0.000001,
+                 random_move_decrease: float = 0.9997, pre_training_games: int = 500, batch_size: int = 60):
+        """
+
+        :param name: Name and TensorFlow scope of the agent
+        :param gamma: Reward discount factor
+        :param learning_rate: Learning rate for the TensorFlow Optimizer
+        :param win_value: Reward for winning a game
+        :param loss_value: Reward for losing a game
+        :param draw_value: Reward for playing a draw
+        :param training: Boolean flag to indicate whether the network should train
+        :param random_move_probability: Probability of making a random move instead of following policy
+        :param beta: Factor multiplied with the Regularization loss
+        :param random_move_decrease: Factor by which to decrease the probability of a random move after each game
+        :param pre_training_games: How many initial games to be played completely randomly, i.e. policy not applied
+        at all
+        :param batch_size: Size of training batch sampled from experience buffer for each training run
+        """
         super().__init__()
         self.gamma = gamma
         self.learning_rate = learning_rate
@@ -174,12 +201,21 @@ class DirectPolicyAgent(Player):
         self.nn = PolicyGradientNetwork(name, learning_rate, beta)
         self.writer = None
 
-    def new_game(self, side):
+    def new_game(self, side: int):
+        """
+        Reset internal state and prepare to play a new game
+        :param side: The side we will play in the coming game
+        """
         self.side = side
         self.board_position_log = []
         self.action_log = []
 
-    def get_probs(self, input_pos):
+    def get_probs(self, input_pos: [np.ndarray]) -> ([float], [float]):
+        """
+        Compute action probabilities through the Neural Network
+        :param input_pos: List of input states for which to compute probabilities
+        :return: Tuple of lists of action probabilities and raw logits for the given input states
+        """
         probs, logits = TFSN.get_session().run([self.nn.output, self.nn.logits],
                                                feed_dict={self.nn.state_in: input_pos})
         return probs, logits
@@ -191,7 +227,8 @@ class DirectPolicyAgent(Player):
         It returns a tuple of post-processed probabilities and q values.
         :param input_pos: The board position to be evaluated as feature vector for the Neural Network
         :param boards: A list of corresponding Board objects for testing if a move is illegal.
-        :return: A tuple of post-processed probabilities and q values. Probabilities for illegal moves are set to -1.
+        :return: A tuple of post-processed probabilities and q values. Probabilities for illegal moves are set to 0 and
+        the sum of all probabilities is 1. Can returns arrays of NaN if all moves have probability 0.
         """
         probabilities, _ = self.get_probs(input_pos)
 
@@ -207,7 +244,12 @@ class DirectPolicyAgent(Player):
         res = probabilities / probabilities.sum(axis=1, keepdims=True)
         return res
 
-    def move(self, board):
+    def move(self, board: Board) -> (GameResult, bool):
+        """
+        Makes a move on the given input state
+        :param board: The current state of the game
+        :return: The GameResult after this move, Flag to indicate whether the move finished the game
+        """
         self.board_position_log.append(board.state.copy())
         nn_input = self.board_state_to_nn_input(board.state)
 
@@ -220,11 +262,12 @@ class DirectPolicyAgent(Player):
                 (self.game_counter < self.pre_training_games):
             move = board.random_empty_spot()
         else:
-            if np.isnan(probs).any():
+            if np.isnan(probs).any():  # Can happen when all probabilities degenerate to 0. Best thing we can do is
+                # make a random legal move
                 move = board.random_empty_spot()
             else:
                 move = np.random.choice(np.arange(len(probs)), p=probs)
-            if not board.is_legal(move):
+            if not board.is_legal(move):  # Debug case only, I hope
                 print("Illegal move!")
 
         # We record the action we selected as well as the Q values of the current state for later use when
@@ -254,7 +297,13 @@ class DirectPolicyAgent(Player):
         for i in range(game_length):
             buffer.add([self.board_position_log[i], self.action_log[i], rewards[i]])
 
-    def calculate_rewards(self, final_reward: float, length: int):
+    def calculate_rewards(self, final_reward: float, length: int) -> [float]:
+        """
+        Computes and returns the discounted rewards for all moves
+        :param final_reward: The reward of the final move of the game
+        :param length:  The number of moves in the game
+        :return: List of discounted rewards for all moves
+        """
         discounted_r = np.zeros(length)
 
         running_add = final_reward
@@ -263,7 +312,11 @@ class DirectPolicyAgent(Player):
             running_add = running_add * self.gamma
         return discounted_r.tolist()
 
-    def final_result(self, result):
+    def final_result(self, result: GameResult):
+        """
+        Called when the game has ended. Time to record results and train the network.
+        :param result: The final result of the game
+        """
         # Compute the final reward based on the game outcome
         if (result == GameResult.NAUGHT_WIN and self.side == NAUGHT) or (
                 result == GameResult.CROSS_WIN and self.side == CROSS):
@@ -280,6 +333,7 @@ class DirectPolicyAgent(Player):
 
         rewards = self.calculate_rewards(final_reward, len(self.action_log))
 
+        # noinspection PyTypeChecker
         self.add_game_to_replay_buffer(final_reward, rewards)
 
         # If we are in training mode we run the optimizer.
