@@ -95,7 +95,7 @@ class PolicyGradientNetwork:
             reg_loss = self.beta * tf.reduce_mean(self.reg_losses)
             tf.summary.scalar("Regularization_loss", reg_loss)
 
-            self.merge = tf.summary.merge_all()
+            self.merge = tf.summary.merge_all(scope=self.name)
 
             total_loss = tf.add(self.loss, reg_loss, name="total_loss")
 
@@ -346,9 +346,9 @@ class DirectPolicyAgent(Player):
             train_batch = np.array(train_batch)
 
             # We convert the input states we have recorded to feature vectors to feed into the training.
-            nn_input = [self.board_state_to_nn_input(x[0]) for x in train_batch]
-            actions = train_batch[:, 1]
-            rewards = train_batch[:, 2]
+            nn_input = np.array([self.board_state_to_nn_input(x[0]) for x in train_batch])
+            actions = np.array(train_batch[:, 1])
+            rewards = np.array(train_batch[:, 2])
             feed_dict = {self.nn.reward_holder: rewards,
                          self.nn.action_holder: actions,
                          self.nn.state_in: nn_input}
