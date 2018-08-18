@@ -1,6 +1,8 @@
 # Tic Tac Toe 
 ## A tale about trying to train a machine to play Tic Tac Toe through Reinforcement Learning
 
+To run the Jupyter notebooks in Binder press:  [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/fcarsten/tic-tac-toe/master)
+
 The goal of this series is to implement and test a couple of different approaches to 
 training a computer how to play **Tic Tac Toe**. We will create:
 
@@ -10,6 +12,7 @@ training a computer how to play **Tic Tac Toe**. We will create:
     * a Tabular Q-Learning player.
     * a Simple Neural Network Q-Learning player.
     * a Deep Neural Network Q-learning player.
+    * a Policy Gradient Descent based player.
 
 I assume you are familiar with:
 * The rules and basic strategy of playing Tic Tac Toe.
