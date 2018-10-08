@@ -3,3 +3,4 @@ matplotlib>=2.2.2
 numpy>=1.14.3
 tensorboard>=1.8.0
 tensorflow>=1.8.0
+jupyter>=1.0.0
