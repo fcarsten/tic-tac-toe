@@ -28,10 +28,10 @@ num_battles = 10
 games_per_battle = 100
 num_training_battles = 1000
 
-TFSessionManager.set_session(tf.Session())
+TFSessionManager.set_session(tf.compat.v1.Session())
 
-TFSessionManager.get_session().run(tf.global_variables_initializer())
-writer = tf.summary.FileWriter('log', TFSessionManager.get_session().graph)
+TFSessionManager.get_session().run(tf.compat.v1.global_variables_initializer())
+writer = tf.compat.v1.summary.FileWriter('log', TFSessionManager.get_session().graph)
 
 # nnplayer rndplayer mm_player
 p1_t = deep_nnplayer

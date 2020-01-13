@@ -5,6 +5,7 @@ from tic_tac_toe.Player import Player
 from tic_tac_toe.TFSessionManager import TFSessionManager as TFSN
 import random
 
+# tf.compat.v1.disable_v2_behavior()
 
 # Tic Tac Toe Policy Gradient Agent
 #
@@ -56,9 +57,9 @@ class PolicyGradientNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
-                               kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
+        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
+                               kernel_initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=2.0),
+                               kernel_regularizer=tf.compat.v1.keras.regularizers.l1_l2(),
                                name=name)
 
     def build_graph(self):
@@ -66,40 +67,40 @@ class PolicyGradientNetwork:
         Builds the actual Network Graph
         """
 
-        with tf.variable_scope(self.name):
-            self.state_in = tf.placeholder(shape=[None, BOARD_SIZE * 3], dtype=tf.float32)
+        with tf.compat.v1.variable_scope(self.name):
+            self.state_in = tf.compat.v1.placeholder(shape=[None, BOARD_SIZE * 3], dtype=tf.float32)
 
             hidden = self.add_dense_layer(self.state_in, BOARD_SIZE * 3 * 9, activation_fn=tf.nn.relu)
             # hidden = self.add_dense_layer(hidden, BOARD_SIZE * 3 * 20, activation_fn=tf.nn.relu)
             self.logits = self.add_dense_layer(hidden, 9, activation_fn=None)
 
             self.output = tf.nn.softmax(self.logits)
-            tf.summary.histogram("Action_policy_values", self.output)
+            tf.compat.v1.summary.histogram("Action_policy_values", self.output)
 
-            self.chosen_action = tf.argmax(self.output, 1)
+            self.chosen_action = tf.argmax(input=self.output, axis=1)
 
             # The next six lines establish the training procedure. We feed the reward and chosen action
             # into the network to compute the loss, and use it to update the network.
-            self.reward_holder = tf.placeholder(shape=[None], dtype=tf.float32)
-            self.action_holder = tf.placeholder(shape=[None], dtype=tf.int32)
+            self.reward_holder = tf.compat.v1.placeholder(shape=[None], dtype=tf.float32)
+            self.action_holder = tf.compat.v1.placeholder(shape=[None], dtype=tf.int32)
 
-            self.indexes = tf.range(0, tf.shape(self.output)[0]) * tf.shape(self.output)[1] + self.action_holder
+            self.indexes = tf.range(0, tf.shape(input=self.output)[0]) * tf.shape(input=self.output)[1] + self.action_holder
             self.responsible_outputs = tf.gather(tf.reshape(self.output, [-1]), self.indexes)
 
-            self.loss = - tf.reduce_mean(tf.log(self.responsible_outputs + 1e-9) * self.reward_holder)
-            tf.summary.scalar("policy_loss", self.loss)
+            self.loss = - tf.reduce_mean(input_tensor=tf.math.log(self.responsible_outputs + 1e-9) * self.reward_holder)
+            tf.compat.v1.summary.scalar("policy_loss", self.loss)
 
-            self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=self.name),
+            self.reg_losses = tf.identity(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES, scope=self.name),
                                           name="reg_losses")
 
-            reg_loss = self.beta * tf.reduce_mean(self.reg_losses)
-            tf.summary.scalar("Regularization_loss", reg_loss)
+            reg_loss = self.beta * tf.reduce_mean(input_tensor=self.reg_losses)
+            tf.compat.v1.summary.scalar("Regularization_loss", reg_loss)
 
-            self.merge = tf.summary.merge_all(scope=self.name)
+            self.merge = tf.compat.v1.summary.merge_all(scope=self.name)
 
             total_loss = tf.add(self.loss, reg_loss, name="total_loss")
 
-            optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.learning_rate)
             self.update_batch = optimizer.minimize(total_loss)
 
 
@@ -360,6 +361,6 @@ class DirectPolicyAgent(Player):
 
             if self.writer is not None:
                 self.writer.add_summary(summary, self.game_counter)
-                summary = tf.Summary(value=[tf.Summary.Value(tag='Random_Move_Probability',
+                summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag='Random_Move_Probability',
                                                              simple_value=self.random_move_probability)])
                 self.writer.add_summary(summary, self.game_counter)

@@ -19,8 +19,8 @@ rewards = np.zeros( (num_reward_steps, num_reward_steps) )
 for loss_reward in range(min_reward, max_reward):
     for draw_reward in range(loss_reward + 1, max_reward + 1):
 
-        tf.reset_default_graph()
-        TFSessionManager.set_session(tf.Session())
+        tf.compat.v1.reset_default_graph()
+        TFSessionManager.set_session(tf.compat.v1.Session())
 
         sess = TFSessionManager.get_session()
 
@@ -28,7 +28,7 @@ for loss_reward in range(min_reward, max_reward):
         rm_player = RndMinMaxAgent()
 
 
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
 
         game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rm_player, num_battles=1000, silent=True)  # , num_battles = 20)
 

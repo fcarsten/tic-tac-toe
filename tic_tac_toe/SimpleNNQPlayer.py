@@ -43,8 +43,8 @@ class QNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
+        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
+                               kernel_initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=2.0),
                                name=name)
 
     def build_graph(self, name: str):
@@ -52,10 +52,10 @@ class QNetwork:
         Builds a new TensorFlow graph with scope `name`
         :param name: The scope for the graph. Needs to be unique for the session.
         """
-        with tf.variable_scope(name):
-            self.input_positions = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
+        with tf.compat.v1.variable_scope(name):
+            self.input_positions = tf.compat.v1.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
 
-            self.target_input = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE), name='targets')
+            self.target_input = tf.compat.v1.placeholder(tf.float32, shape=(None, BOARD_SIZE), name='targets')
 
             net = self.input_positions
 
@@ -64,9 +64,9 @@ class QNetwork:
             self.q_values = self.add_dense_layer(net, BOARD_SIZE, name='q_values')
 
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
-            mse = tf.losses.mean_squared_error(predictions=self.q_values, labels=self.target_input)
-            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse,
-                                                                                                          name='train')
+            mse = tf.compat.v1.losses.mean_squared_error(predictions=self.q_values, labels=self.target_input)
+            self.train_step = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse,
+                                                                                                      name='train')
 
 
 class NNQPlayer(Player):
@@ -149,7 +149,7 @@ class NNQPlayer(Player):
         :return: A tuple of probabilities and q values of all actions (including illegal ones).
         """
         probs, qvalues = TFSN.get_session().run([self.nn.probabilities, self.nn.q_values],
-                                                feed_dict={self.nn.input_positions: [input_pos]})
+                                            feed_dict={self.nn.input_positions: [input_pos]})
         return probs[0], qvalues[0]
 
     def move(self, board: Board) -> (GameResult, bool):

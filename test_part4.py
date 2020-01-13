@@ -14,8 +14,8 @@ def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=1
     game_number = []
     game_counter = 0
 
-    TFSessionManager.set_session(tf.Session())
-    TFSessionManager.get_session().run(tf.global_variables_initializer())
+    TFSessionManager.set_session(tf.compat.v1.Session())
+    TFSessionManager.get_session().run(tf.compat.v1.global_variables_initializer())
 
     for i in range(num_battles):
         p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
@@ -34,15 +34,15 @@ from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.SimpleNNQPlayer import NNQPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
 
-tf.reset_default_graph()
+with tf.Graph().as_default():
+    nnplayer = NNQPlayer("QLearner1", learning_rate=0.01, win_value=100.0, loss_value=-100.0)
+    nnplayer2 = NNQPlayer("QLearner2", learning_rate=0.01, win_value=100.0, loss_value=-100.0)
+    mm_player = MinMaxAgent()
+    rndplayer = RandomPlayer()
 
-nnplayer = NNQPlayer("QLearner1", learning_rate=0.01, win_value=100.0, loss_value=-100.0)
-mm_player = MinMaxAgent()
-rndplayer = RandomPlayer()
+    game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, nnplayer2, num_battles=10000)  # , num_battles = 20)
+    # game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, mm_player) #, num_battles = 20)
 
-game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nnplayer, num_battles=10000)  # , num_battles = 20)
-# game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, mm_player) #, num_battles = 20)
+    p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 
-p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
-
-plt.show()
+    plt.show()

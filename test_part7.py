@@ -9,39 +9,38 @@ from tic_tac_toe.MinMaxAgent import MinMaxAgent
 from tic_tac_toe.RndMinMaxAgent import RndMinMaxAgent
 from tic_tac_toe.DirectPolicyAgent import DirectPolicyAgent
 
-TENSORLOG_DIR = './graphs'
+TENSORLOG_DIR = './graphs_dp'
 
-if tf.gfile.Exists(TENSORLOG_DIR):
-    tf.gfile.DeleteRecursively(TENSORLOG_DIR)
+if tf.io.gfile.exists(TENSORLOG_DIR):
+    tf.io.gfile.rmtree(TENSORLOG_DIR)
 
-tf.reset_default_graph()
+with tf.Graph().as_default():
+    nnplayer = DirectPolicyAgent("PolicyLearner1")
+    # nn2player = EGreedyNNQPlayer("QLearner2", win_value=100.0, loss_value=-100.0)
+    # nnplayer = EGreedyNNQPlayer("QLearner1")#, learning_rate=0.001, win_value=10.0, loss_value=-10.0)
+    # nn2player = EGreedyNNQPlayer("QLearner2")#, learning_rate=0.001, win_value=10.0, loss_value=-10.0)
+    mm_player = MinMaxAgent()
+    rndplayer = RandomPlayer()
+    rm_player = RndMinMaxAgent()
 
-nnplayer = DirectPolicyAgent("PolicyLearner1")
-# nn2player = EGreedyNNQPlayer("QLearner2", win_value=100.0, loss_value=-100.0)
-# nnplayer = EGreedyNNQPlayer("QLearner1")#, learning_rate=0.001, win_value=10.0, loss_value=-10.0)
-# nn2player = EGreedyNNQPlayer("QLearner2")#, learning_rate=0.001, win_value=10.0, loss_value=-10.0)
-mm_player = MinMaxAgent()
-rndplayer = RandomPlayer()
-rm_player = RndMinMaxAgent()
+    TFSessionManager.set_session(tf.compat.v1.Session())
 
-TFSessionManager.set_session(tf.Session())
+    sess = TFSessionManager.get_session()
+    writer = tf.compat.v1.summary.FileWriter(TENSORLOG_DIR, sess.graph)
+    nnplayer.writer = writer
 
-sess = TFSessionManager.get_session()
-writer = tf.summary.FileWriter(TENSORLOG_DIR, sess.graph)
-nnplayer.writer = writer
+    sess.run(tf.compat.v1.global_variables_initializer())
 
-sess.run(tf.global_variables_initializer())
+    # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
+    # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer) #, num_battles = 20)
+    # game_number, p1_wins, p2_wins, draws = evaluate_players( mm_player, nnplayer, num_battles=300)  # , num_battles = 20)
+    game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rm_player, num_battles=1000, writer=writer)  # , num_battles = 20)
+    # game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer, num_battles=100)  # , num_battles = 20)
 
-# game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
-# game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer) #, num_battles = 20)
-# game_number, p1_wins, p2_wins, draws = evaluate_players( mm_player, nnplayer, num_battles=300)  # , num_battles = 20)
-game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rm_player, num_battles=1000, writer=writer)  # , num_battles = 20)
-# game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer, num_battles=100)  # , num_battles = 20)
+    # game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
+    writer.close()
 
-# game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
-writer.close()
+    p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 
-p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
-
-plt.show()
-TFSessionManager.set_session(None)
+    plt.show()
+    TFSessionManager.set_session(None)
