@@ -8,63 +8,64 @@ from tic_tac_toe.TFSessionManager import TFSessionManager
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-board = Board()
-nnplayer = NNQPlayer("QLearner1")
-nnplayer2 = NNQPlayer("QLearner2")
+with tf.Graph().as_default():
+    board = Board()
+    nnplayer = NNQPlayer("QLearner1")
+    nnplayer2 = NNQPlayer("QLearner2")
 
-deep_nnplayer = NNQPlayer("DeepQLearner1")
+    deep_nnplayer = NNQPlayer("DeepQLearner1")
 
-rndplayer = RandomPlayer()
-mm_player = MinMaxAgent()
-tq_player = TQPlayer()
+    rndplayer = RandomPlayer()
+    mm_player = MinMaxAgent()
+    tq_player = TQPlayer()
 
-p1_wins = []
-p2_wins = []
-draws = []
-game_number = []
-game_counter = 0
+    p1_wins = []
+    p2_wins = []
+    draws = []
+    game_number = []
+    game_counter = 0
 
-num_battles = 10
-games_per_battle = 100
-num_training_battles = 1000
+    num_battles = 10
+    games_per_battle = 100
+    num_training_battles = 1000
 
-TFSessionManager.set_session(tf.compat.v1.Session())
+    TFSessionManager.set_session(tf.compat.v1.Session())
 
-TFSessionManager.get_session().run(tf.compat.v1.global_variables_initializer())
-writer = tf.compat.v1.summary.FileWriter('log', TFSessionManager.get_session().graph)
+    TFSessionManager.get_session().run(tf.compat.v1.global_variables_initializer())
+    writer = tf.compat.v1.summary.FileWriter('log', TFSessionManager.get_session().graph)
 
-# nnplayer rndplayer mm_player
-p1_t = deep_nnplayer
-p2_t = mm_player
+    # nnplayer rndplayer mm_player
+    p1_t = deep_nnplayer
+    p2_t = mm_player
 
-p1 = p1_t
-p2 = p2_t
+    p1 = p1_t
+    p2 = p2_t
 
-# nnplayer.training= False
-# nnplayer2.training= False
+    # nnplayer.training= False
+    # nnplayer2.training= False
 
-for i in range(num_training_battles):
-    p1win, p2win, draw = battle(p1_t, p2_t, games_per_battle, False)
-    p1_wins.append(p1win)
-    p2_wins.append(p2win)
-    draws.append(draw)
-    game_counter = game_counter + 1
-    game_number.append(game_counter)
+    for i in range(num_training_battles):
+        p1win, p2win, draw = battle(p1_t, p2_t, games_per_battle, False)
+        p1_wins.append(p1win)
+        p2_wins.append(p2win)
+        draws.append(draw)
+        game_counter = game_counter + 1
+        game_number.append(game_counter)
 
-# nnplayer.training= False
-# nnplayer2.training= False
+    # nnplayer.training= False
+    # nnplayer2.training= False
 
-for i in range(num_battles):
-    p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
-    p1_wins.append(p1win)
-    p2_wins.append(p2win)
-    draws.append(draw)
-    game_counter = game_counter + 1
-    game_number.append(game_counter)
+    for i in range(num_battles):
+        p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
+        p1_wins.append(p1win)
+        p2_wins.append(p2win)
+        draws.append(draw)
+        game_counter = game_counter + 1
+        game_number.append(game_counter)
 
-writer.close()
-TFSessionManager.set_session(None)
+    writer.close()
+    TFSessionManager.set_session(None)
 
-p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
+    p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 
-plt.show()
+    plt.show()
