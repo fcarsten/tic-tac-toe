@@ -24,70 +24,28 @@ class QNetwork:
         """
         self.learningRate = learning_rate
         self.name = name
-        # self.input_positions = None
-        # self.target_input = None
-        # self.q_values = None
-        # self.probabilities = None
-        # self.train_step = None
-        self.model = self.build_graph(name)
 
-    # def add_dense_layer(self, input_tensor: tf.Tensor, output_size: int, activation_fn=None,
-    #                     name: str = None) -> tf.Tensor:
-    #     """
-    #     Adds a dense Neural Net layer to network input_tensor
-    #     :param input_tensor: The layer to which we should add the new layer
-    #     :param output_size: The output size of the new layer
-    #     :param activation_fn: The activation function for the new layer, or None if no activation function
-    #     should be used
-    #     :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
-    #     :return: A new dense layer attached to the `input_tensor`
-    #     """
-    #     return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
-    #                            kernel_initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=2.0),
-    #                            name=name)
+        with tf.keras.backend.name_scope(name):
+            input_layer = tf.keras.Input(shape=(BOARD_SIZE * 3,))
+            x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation='relu')(input_layer)
+            x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 100, activation='relu')(x)
+            x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation='relu')(x)
+            q_values = tf.keras.layers.Dense(BOARD_SIZE, activation=None, name='q_values')(x)
+            probabilities = tf.keras.layers.Softmax(name='probabilities')(q_values)
+
+            self.model = tf.keras.Model(inputs=input_layer, outputs=[probabilities, q_values])
+            self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()])
+
 
     def fit(self, inputs, targets):
-        i_a = np.array(inputs)
-        t_a = np.array(targets)
-        self.model.fit(i_a, {'q_values': t_a}, verbose=0)
+        np_inputs = np.array(inputs)
+        np_targets = np.array(targets)
+#        self.model.train_on_batch(i_a, {'q_values': t_a}, reset_metrics=False)
+        self.model.fit(np_inputs, {'q_values': np_targets}, verbose=0)
 
     def predict(self, input :  np.ndarray):
-        probs, q_vals = self.model.predict(input.reshape(1,-1))
+        probs, q_vals = self.model.predict(input)
         return probs, q_vals
-
-    def build_graph(self, name: str):
-        """
-        Builds a new TensorFlow graph with scope `name`
-        :param name: The scope for the graph. Needs to be unique for the session.
-        """
-
-        input_layer = tf.keras.Input(shape=(BOARD_SIZE*3,))
-        x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation = 'relu')(input_layer)
-        x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation = 'relu')(x)
-        x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation = 'relu')(x)
-        q_values = tf.keras.layers.Dense(BOARD_SIZE, activation=None, name='q_values')(x)
-        probabilities = tf.keras.layers.Softmax(name='probabilities')(q_values)
-
-        model = tf.keras.Model(inputs=input_layer, outputs=[probabilities, q_values])
-
-        model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()])
-        return model
-
-        # with tf.compat.v1.variable_scope(name):
-        #     self.input_positions = tf.compat.v1.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
-        #
-        #     self.target_input = tf.compat.v1.placeholder(tf.float32, shape=(None, BOARD_SIZE), name='targets')
-        #
-        #     net = self.input_positions
-        #
-        #     net = self.add_dense_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
-        #
-        #     self.q_values = self.add_dense_layer(net, BOARD_SIZE, name='q_values')
-        #
-        #     self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
-        #     mse = tf.compat.v1.losses.mean_squared_error(predictions=self.q_values, labels=self.target_input)
-        #     self.train_step = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse,
-        #                                                                                               name='train')
 
 
 class NNQPlayerTF2(Player):
@@ -171,8 +129,6 @@ class NNQPlayerTF2(Player):
         """
 
         probs, qvalues = self.nn.predict(input_pos.reshape(1, BOARD_SIZE*3))
-        # probs, qvalues = TFSN.get_session().run([self.nn.probabilities, self.nn.q_values],
-        #                                     feed_dict={self.nn.input_positions: [input_pos]})
         return probs[0], qvalues[0]
 
     def move(self, board: Board) -> (GameResult, bool):
@@ -244,7 +200,5 @@ class NNQPlayerTF2(Player):
 
             # We convert the input states we have recorded to feature vectors to feed into the training.
             nn_input = [self.board_state_to_nn_input(x) for x in self.board_position_log]
-            self.nn.fit(nn_input, targets)
             # We run the training step with the recorded inputs and new Q value targets.
-            # TFSN.get_session().run([self.nn.train_step],
-            #                        feed_dict={self.nn.input_positions: nn_input, self.nn.target_input: targets})
+            self.nn.fit(nn_input, targets)
