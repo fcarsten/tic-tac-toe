@@ -59,7 +59,7 @@ class TQPlayer(Player):
         :return: The next move based on the current Q values for the input state
         """
         board_hash = board.hash_value()  # type: int
-        qvals = self.get_q(board_hash)  # type: [float]
+        qvals = self.get_q(board_hash)  # type: np.ndarray
         while True:
             m = np.argmax(qvals)  # type: int
             if board.is_legal(m):
