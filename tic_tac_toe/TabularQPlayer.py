@@ -27,14 +27,14 @@ class TQPlayer(Player):
         :param q_init: The initial q values for each move and state.
         """
         self.side = None
-        self.q = {}  # type: Dict[int, [float]]
+        self.q = {}  # type: Dict[int, np.ndarray]
         self.move_history = []  # type: List[(int, int)]
         self.learning_rate = alpha
         self.value_discount = gamma
         self.q_init_val = q_init
         super().__init__()
 
-    def get_q(self, board_hash: int) -> [int]:
+    def get_q(self, board_hash: int) -> np.ndarray:
         """
         Returns the q values for the state with hash value `board_hash`.
         :param board_hash: The hash value of the board state for which the q values should be returned
@@ -59,7 +59,7 @@ class TQPlayer(Player):
         :return: The next move based on the current Q values for the input state
         """
         board_hash = board.hash_value()  # type: int
-        qvals = self.get_q(board_hash)  # type: [int]
+        qvals = self.get_q(board_hash)  # type: [float]
         while True:
             m = np.argmax(qvals)  # type: int
             if board.is_legal(m):
