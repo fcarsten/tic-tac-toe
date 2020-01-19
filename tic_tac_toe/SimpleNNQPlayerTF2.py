@@ -16,7 +16,7 @@ class QNetwork:
     Contains a TensorFlow graph which is suitable for learning the Tic Tac Toe Q function
     """
 
-    def __init__(self, name: str, learning_rate: float):
+    def __init__(self, name: str, learning_rate: float, run_tf_function : bool = True):
         """
         Constructor for QNetwork. Takes a name and a learning rate for the GradientDescentOptimizer
         :param name: Name of the network
@@ -34,7 +34,11 @@ class QNetwork:
             probabilities = tf.keras.layers.Softmax(name='probabilities')(q_values)
 
             self.model = tf.keras.Model(inputs=input_layer, outputs=[probabilities, q_values])
-            self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()])
+            if run_tf_function:
+                self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()])
+            else:
+                self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()], experimental_run_tf_function = False)
+
 
 
     def fit(self, inputs, targets):
@@ -68,7 +72,7 @@ class NNQPlayerTF2(Player):
         return res.reshape(-1)
 
     def __init__(self, name: str, reward_discount: float = 0.95, win_value: float = 1.0, draw_value: float = 0.0,
-                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True):
+                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True, run_tf_function : bool = True):
         """
         Constructor for the Neural Network player.
         :param name: The name of the player. Also the name of its TensorFlow scope. Needs to be unique
@@ -90,7 +94,7 @@ class NNQPlayerTF2(Player):
         self.next_max_log = []
         self.values_log = []
         self.name = name
-        self.nn = QNetwork(name, learning_rate)
+        self.nn = QNetwork(name, learning_rate, run_tf_function)
         self.training = training
         super().__init__()
 
