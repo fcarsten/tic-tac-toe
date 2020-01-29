@@ -8,7 +8,7 @@ from tic_tac_toe.TFSessionManager import TFSessionManager
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-tf.compat.v1.disable_eager_execution()
+#tf.compat.v1.disable_eager_execution()
 #with tf.Graph().as_default():
 
 import time

@@ -11,6 +11,26 @@ from tic_tac_toe.Board import Board, BOARD_SIZE, EMPTY, CROSS, NAUGHT
 from tic_tac_toe.Player import Player, GameResult
 
 
+class MyModel(tf.keras.models.Model):
+    def __init__(self, name):
+        super(MyModel, self).__init__()
+        self.input_layer = tf.keras.Input(shape=(BOARD_SIZE * 3,))
+        self.d1 = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation='relu')
+        self.d2 = tf.keras.layers.Dense(BOARD_SIZE * 3 * 100, activation='relu')
+        self.d3 = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation='relu')
+        self.q_values_l = tf.keras.layers.Dense(BOARD_SIZE, activation=None, name='q_values')
+        self.probabilities_l = tf.keras.layers.Softmax(name='probabilities')
+
+    @tf.function
+    def call(self, input_data):
+        x = self.d1(input_data)
+        x = self.d2(x)
+        x = self.d3(x)
+        q = self.q_values_l(x)
+        p = self.probabilities_l(q)
+        return q, p
+
+
 class QNetwork:
     """
     Contains a TensorFlow graph which is suitable for learning the Tic Tac Toe Q function
@@ -24,27 +44,24 @@ class QNetwork:
         """
         self.learningRate = learning_rate
         self.name = name
+        optimizer = tf.keras.optimizers.Adam()
 
-        with tf.keras.backend.name_scope(name):
-            input_layer = tf.keras.Input(shape=(BOARD_SIZE * 3,))
-            x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation='relu')(input_layer)
-            x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 100, activation='relu')(x)
-            x = tf.keras.layers.Dense(BOARD_SIZE * 3 * 9, activation='relu')(x)
-            q_values = tf.keras.layers.Dense(BOARD_SIZE, activation=None, name='q_values')(x)
-            probabilities = tf.keras.layers.Softmax(name='probabilities')(q_values)
+        # self.model.run_eagerly = False
 
-            self.model = tf.keras.Model(inputs=input_layer, outputs=[probabilities, q_values])
-            self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()])
+        self.model = MyModel(name)
+        self.model.compile(optimizer, loss = [tf.keras.losses.MeanSquaredError(), None])#, experimental_run_tf_function=False )
 
 
     def fit(self, inputs, targets):
         np_inputs = np.array(inputs)
         np_targets = np.array(targets)
 #        self.model.train_on_batch(i_a, {'q_values': t_a}, reset_metrics=False)
-        self.model.fit(np_inputs, {'q_values': np_targets}, verbose=0)
+#        self.model.fit(np_inputs, {'q_values': np_targets}, verbose=0)
+        log = self.model.fit(np_inputs,  np_targets, verbose=0)
+#        print("Loss: {}", log.history['loss'])
 
     def predict(self, input :  np.ndarray):
-        probs, q_vals = self.model.predict(input)
+        q_vals, probs = self.model.predict(input)
         return probs, q_vals
 
 
