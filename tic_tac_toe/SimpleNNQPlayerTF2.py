@@ -16,7 +16,7 @@ class QNetwork:
     Contains a TensorFlow graph which is suitable for learning the Tic Tac Toe Q function
     """
 
-    def __init__(self, name: str, learning_rate: float, run_tf_function : bool = True):
+    def __init__(self, name: str, learning_rate: float):
         """
         Constructor for QNetwork. Takes a name and a learning rate for the GradientDescentOptimizer
         :param name: Name of the network
@@ -33,22 +33,22 @@ class QNetwork:
             q_values = tf.keras.layers.Dense(BOARD_SIZE, activation=None, name='q_values')(x)
             probabilities = tf.keras.layers.Softmax(name='probabilities')(q_values)
 
-            self.model = tf.keras.Model(inputs=input_layer, outputs=[probabilities, q_values])
-            if run_tf_function:
-                self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()])
-            else:
-                self.model.compile(optimizer='adam', loss = [None, tf.keras.losses.MeanSquaredError()], experimental_run_tf_function = False)
+            self.model = tf.keras.Model(inputs=input_layer, outputs=[q_values, probabilities])
+            adam = tf.keras.optimizers.Adam()
 
+            self.model.compile(adam, loss = [tf.keras.losses.MeanSquaredError(), None])
+            # self.model.compile(optimizer='adam', loss = [tf.keras.losses.MeanSquaredError(), None])
 
 
     def fit(self, inputs, targets):
         np_inputs = np.array(inputs)
         np_targets = np.array(targets)
 #        self.model.train_on_batch(i_a, {'q_values': t_a}, reset_metrics=False)
-        self.model.fit(np_inputs, {'q_values': np_targets}, verbose=0)
+        res = self.model.fit(np_inputs, {'q_values': np_targets}, verbose=0)
+        # print("Loss: {}", res.history['loss'])
 
     def predict(self, input :  np.ndarray):
-        probs, q_vals = self.model.predict(input)
+        q_vals, probs  = self.model.predict(input)
         return probs, q_vals
 
 
@@ -72,7 +72,7 @@ class NNQPlayerTF2(Player):
         return res.reshape(-1)
 
     def __init__(self, name: str, reward_discount: float = 0.95, win_value: float = 1.0, draw_value: float = 0.0,
-                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True, run_tf_function : bool = True):
+                 loss_value: float = -1.0, learning_rate: float = 0.01, training: bool = True):
         """
         Constructor for the Neural Network player.
         :param name: The name of the player. Also the name of its TensorFlow scope. Needs to be unique
@@ -94,7 +94,7 @@ class NNQPlayerTF2(Player):
         self.next_max_log = []
         self.values_log = []
         self.name = name
-        self.nn = QNetwork(name, learning_rate, run_tf_function)
+        self.nn = QNetwork(name, learning_rate)
         self.training = training
         super().__init__()
 

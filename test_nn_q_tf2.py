@@ -3,11 +3,12 @@ from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.SimpleNNQPlayerTF2 import NNQPlayerTF2
 import matplotlib.pyplot as plt
 import time
+import tensorflow as tf
 
-def run_test(run_tf_function):
+def run_test():
     start_time = time.time()
 
-    nnplayer = NNQPlayerTF2("QLearner1", run_tf_function=run_tf_function)
+    nnplayer = NNQPlayerTF2("QLearner1")
     rndplayer2 = RandomPlayer()
 
     p1_wins = []
@@ -44,4 +45,7 @@ def run_test(run_tf_function):
 # with tf.Graph().as_default():
 #     run_test()
 
-run_test(True)
+from tensorflow.python.eager import context
+
+with context.eager_mode():
+    run_test()
