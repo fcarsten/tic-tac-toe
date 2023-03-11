@@ -44,7 +44,7 @@ class QNetwork:
         :return: A new dense layer attached to the `input_tensor`
         """
         return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.compat.v1.layers.variance_scaling_initializer(),
+                               kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                                name=name)
 
     def build_graph(self, name: str):
@@ -64,7 +64,7 @@ class QNetwork:
             self.q_values = self.add_dense_layer(net, BOARD_SIZE, name='q_values')
 
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
-            mse = tf.losses.mean_squared_error(predictions=self.q_values, labels=self.target_input)
+            mse = tf.compat.v1.losses.mean_squared_error(predictions=self.q_values, labels=self.target_input)
             self.train_step = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(mse,
                                                                                                           name='train')
 
