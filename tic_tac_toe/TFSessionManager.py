@@ -14,18 +14,18 @@ class TFSessionManager:
     session = None
 
     @classmethod
-    def get_session(cls) -> tf.Session:
+    def get_session(cls) -> tf.compat.v1.Session:
         """
         Returns the one shared session between all players. If no session has been explicitly set, a new session
         is created.
         :return: The one shared session between all players.
         """
         if TFSessionManager.session is None:
-            TFSessionManager.session = tf.Session()
+            TFSessionManager.session = tf.compat.v1.Session()
         return TFSessionManager.session
 
     @classmethod
-    def set_session(cls, session: tf.Session):
+    def set_session(cls, session: tf.compat.v1.Session) -> object:
         """
         Explicitly sets the input parameter session as the one session to be shared by all instances.
         If a session already was set previously and it is not identical with the new one, the old session

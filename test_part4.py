@@ -14,8 +14,8 @@ def evaluate_players(p1: Player, p2: Player, games_per_battle=100, num_battles=1
     game_number = []
     game_counter = 0
 
-    TFSessionManager.set_session(tf.Session())
-    TFSessionManager.get_session().run(tf.global_variables_initializer())
+    TFSessionManager.set_session(tf.compat.v1.Session())
+    TFSessionManager.get_session().run(tf.compat.v1.global_variables_initializer())
 
     for i in range(num_battles):
         p1win, p2win, draw = battle(p1, p2, games_per_battle, False)
@@ -34,7 +34,8 @@ from tic_tac_toe.RandomPlayer import RandomPlayer
 from tic_tac_toe.SimpleNNQPlayer import NNQPlayer
 from tic_tac_toe.MinMaxAgent import MinMaxAgent
 
-tf.reset_default_graph()
+tf.compat.v1.disable_eager_execution()
+tf.compat.v1.reset_default_graph()
 
 nnplayer = NNQPlayer("QLearner1", learning_rate=0.01, win_value=100.0, loss_value=-100.0)
 mm_player = MinMaxAgent()

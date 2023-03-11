@@ -56,9 +56,9 @@ class PolicyGradientNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
-                               kernel_regularizer=tf.contrib.layers.l1_l2_regularizer(),
+        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
+                               kernel_initializer=tf.keras.initializers.VarianceScaling(),
+                               kernel_regularizer=tf.keras.regularizers.L1L2(),
                                name=name)
 
     def build_graph(self):
@@ -66,8 +66,8 @@ class PolicyGradientNetwork:
         Builds the actual Network Graph
         """
 
-        with tf.variable_scope(self.name):
-            self.state_in = tf.placeholder(shape=[None, BOARD_SIZE * 3], dtype=tf.float32)
+        with tf.compat.v1.variable_scope(self.name):
+            self.state_in = tf.compat.v1.placeholder(shape=[None, BOARD_SIZE * 3], dtype=tf.float32)
 
             hidden = self.add_dense_layer(self.state_in, BOARD_SIZE * 3 * 9, activation_fn=tf.nn.relu)
             # hidden = self.add_dense_layer(hidden, BOARD_SIZE * 3 * 20, activation_fn=tf.nn.relu)
@@ -80,26 +80,26 @@ class PolicyGradientNetwork:
 
             # The next six lines establish the training procedure. We feed the reward and chosen action
             # into the network to compute the loss, and use it to update the network.
-            self.reward_holder = tf.placeholder(shape=[None], dtype=tf.float32)
-            self.action_holder = tf.placeholder(shape=[None], dtype=tf.int32)
+            self.reward_holder = tf.compat.v1.placeholder(shape=[None], dtype=tf.float32)
+            self.action_holder = tf.compat.v1.placeholder(shape=[None], dtype=tf.int32)
 
             self.indexes = tf.range(0, tf.shape(self.output)[0]) * tf.shape(self.output)[1] + self.action_holder
             self.responsible_outputs = tf.gather(tf.reshape(self.output, [-1]), self.indexes)
 
-            self.loss = - tf.reduce_mean(tf.log(self.responsible_outputs + 1e-9) * self.reward_holder)
-            tf.summary.scalar("policy_loss", self.loss)
+            self.loss = - tf.reduce_mean(tf.math.log(self.responsible_outputs + 1e-9) * self.reward_holder)
+            tf.compat.v1.summary.scalar("policy_loss", self.loss)
 
-            self.reg_losses = tf.identity(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES, scope=self.name),
+            self.reg_losses = tf.identity(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES, scope=self.name),
                                           name="reg_losses")
 
             reg_loss = self.beta * tf.reduce_mean(self.reg_losses)
-            tf.summary.scalar("Regularization_loss", reg_loss)
+            tf.compat.v1.summary.scalar("Regularization_loss", reg_loss)
 
-            self.merge = tf.summary.merge_all(scope=self.name)
+            self.merge = tf.compat.v1.summary.merge_all(scope=self.name)
 
             total_loss = tf.add(self.loss, reg_loss, name="total_loss")
 
-            optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.learning_rate)
             self.update_batch = optimizer.minimize(total_loss)
 
 
@@ -343,7 +343,7 @@ class DirectPolicyAgent(Player):
             train_batch = self.replay_buffer_win.sample(batch_third)
             train_batch.extend(self.replay_buffer_loss.sample(batch_third))
             train_batch.extend(self.replay_buffer_draw.sample(batch_third))
-            train_batch = np.array(train_batch)
+            train_batch = np.array(train_batch, dtype=list)
 
             # We convert the input states we have recorded to feature vectors to feed into the training.
             nn_input = np.array([self.board_state_to_nn_input(x[0]) for x in train_batch])
@@ -360,6 +360,6 @@ class DirectPolicyAgent(Player):
 
             if self.writer is not None:
                 self.writer.add_summary(summary, self.game_counter)
-                summary = tf.Summary(value=[tf.Summary.Value(tag='Random_Move_Probability',
+                summary = tf.compat.v1.Summary(value=[tf.compat.v1.Summary.Value(tag='Random_Move_Probability',
                                                              simple_value=self.random_move_probability)])
                 self.writer.add_summary(summary, self.game_counter)
