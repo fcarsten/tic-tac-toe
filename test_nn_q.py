@@ -8,6 +8,8 @@ from tic_tac_toe.TFSessionManager import TFSessionManager
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
+tf.compat.v1.disable_eager_execution()
+
 board = Board()
 nnplayer = NNQPlayer("QLearner1")
 nnplayer2 = NNQPlayer("QLearner2")
@@ -28,10 +30,10 @@ num_battles = 10
 games_per_battle = 100
 num_training_battles = 1000
 
-TFSessionManager.set_session(tf.Session())
+TFSessionManager.set_session(tf.compat.v1.Session())
 
-TFSessionManager.get_session().run(tf.global_variables_initializer())
-writer = tf.summary.FileWriter('log', TFSessionManager.get_session().graph)
+TFSessionManager.get_session().run(tf.compat.v1.global_variables_initializer())
+writer = None  # tf.summary.FileWriter('log', TFSessionManager.get_session().graph)
 
 # nnplayer rndplayer mm_player
 p1_t = deep_nnplayer
@@ -62,7 +64,8 @@ for i in range(num_battles):
     game_counter = game_counter + 1
     game_number.append(game_counter)
 
-writer.close()
+if writer is not None:
+    writer.close()
 TFSessionManager.set_session(None)
 
 p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')

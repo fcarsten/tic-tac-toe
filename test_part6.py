@@ -11,10 +11,11 @@ from tic_tac_toe.DeepExpDoubleDuelQPlayer import DeepExpDoubleDuelQPlayer
 
 TENSORLOG_DIR = './graphs'
 
-if tf.gfile.Exists(TENSORLOG_DIR):
-    tf.gfile.DeleteRecursively(TENSORLOG_DIR)
+if tf.compat.v1.gfile.Exists(TENSORLOG_DIR):
+    tf.compat.v1.gfile.DeleteRecursively(TENSORLOG_DIR)
 
-tf.reset_default_graph()
+tf.compat.v1.disable_eager_execution()
+tf.compat.v1.reset_default_graph()
 
 nnplayer = DeepExpDoubleDuelQPlayer("QLearner1", win_value=10.0, loss_value=-10.0, learning_rate=0.001)
 # nn2player = EGreedyNNQPlayer("QLearner2", win_value=100.0, loss_value=-100.0)
@@ -24,13 +25,13 @@ mm_player = MinMaxAgent()
 rndplayer = RandomPlayer()
 rm_player = RndMinMaxAgent()
 
-TFSessionManager.set_session(tf.Session())
+TFSessionManager.set_session(tf.compat.v1.Session())
 
 sess = TFSessionManager.get_session()
-writer = tf.summary.FileWriter(TENSORLOG_DIR, sess.graph)
+writer = tf.compat.v1.summary.FileWriter(TENSORLOG_DIR, sess.graph)
 nnplayer.writer = writer
 
-sess.run(tf.global_variables_initializer())
+sess.run(tf.compat.v1.global_variables_initializer())
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer, num_battles=10000) #, num_battles = 20)
 # game_number, p1_wins, p2_wins, draws = evaluate_players(rndplayer, nnplayer) #, num_battles = 20)
@@ -39,7 +40,9 @@ game_number, p1_wins, p2_wins, draws = evaluate_players(rm_player, nnplayer, num
 # game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer, num_battles=100)  # , num_battles = 20)
 
 # game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nn2player, num_battles=100)  # , num_battles = 20)
-writer.close()
+
+if writer is not None:
+    writer.close()
 
 p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 

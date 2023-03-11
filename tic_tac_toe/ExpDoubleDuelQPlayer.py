@@ -61,8 +61,8 @@ class QNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.contrib.layers.variance_scaling_initializer(),
+        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
+                               kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
                                name=name)
 
     def build_graph(self, name: str):
@@ -70,9 +70,9 @@ class QNetwork:
         Builds a new TensorFlow graph with scope `name`
         :param name: The scope for the graph. Needs to be unique for the session.
         """
-        with tf.variable_scope(name):
-            self.input_positions = tf.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
-            self.target_q = tf.placeholder(shape=[None], dtype=tf.float32, name='target')
+        with tf.compat.v1.variable_scope(name):
+            self.input_positions = tf.compat.v1.placeholder(tf.float32, shape=(None, BOARD_SIZE * 3), name='inputs')
+            self.target_q = tf.compat.v1.placeholder(shape=[None], dtype=tf.float32, name='target')
 
             net = self.input_positions
 
@@ -86,14 +86,14 @@ class QNetwork:
 
             self.probabilities = tf.nn.softmax(self.q_values, name='probabilities')
 
-            self.actions = tf.placeholder(shape=[None], dtype=tf.int32, name='actions')
+            self.actions = tf.compat.v1.placeholder(shape=[None], dtype=tf.int32, name='actions')
             self.actions_onehot = tf.one_hot(self.actions, BOARD_SIZE, dtype=tf.float32)
             self.q = tf.reduce_sum(tf.multiply(self.q_values, self.actions_onehot), axis=1)
 
             self.td_error = tf.square(self.target_q - self.q)
             self.loss = tf.reduce_mean(self.td_error)
 
-            self.train_step = tf.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(self.loss,
+            self.train_step = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=self.learningRate).minimize(self.loss,
                                                                                                           name='train')
 
 
@@ -164,8 +164,8 @@ class ExpDoubleDuelQPlayer(Player):
         :param tau: A float value between 0 and 1 which determines the weight of src and target for the new value
         :return: A list of TensorFlow tensors for the copying operations
         """
-        src_vars = tf.trainable_variables(src)
-        target_vars = tf.trainable_variables(target)
+        src_vars = tf.compat.v1.trainable_variables(src)
+        target_vars = tf.compat.v1.trainable_variables(target)
 
         op_holder = []
 
@@ -353,7 +353,7 @@ class ExpDoubleDuelQPlayer(Player):
             train_batch = self.replay_buffer_win.sample(batch_third)
             train_batch.extend(self.replay_buffer_loss.sample(batch_third))
             train_batch.extend(self.replay_buffer_draw.sample(batch_third))
-            train_batch = np.array(train_batch)
+            train_batch = np.array(train_batch, dtype=list)
 
             #
             # Let's compute the target q values for all non terminal move
