@@ -110,7 +110,7 @@ class ReplayBuffer:
         self.buffer = []
         self.buffer_size = buffer_size
 
-    def add(self, experience: []):
+    def add(self, experience: list):
         """
         Adds a list of experience Tuples to the buffer. If this operation causes the buffer to be longer than its
         defined maximum, old entries will be evicted until the maximum length is achieved. Entries are added and
@@ -121,7 +121,7 @@ class ReplayBuffer:
             self.buffer[0:1] = []
         self.buffer.append(experience)
 
-    def sample(self, size) -> []:
+    def sample(self, size) -> list:
         """
         Returns a random sample of `size` entries from the Replay Buffer. If there are less than `size` entries
         in the buffer, all entries will be returned.
@@ -151,7 +151,7 @@ class ExpDoubleDuelQPlayer(Player):
                         (state == EMPTY).astype(int)])
         return res.reshape(-1)
 
-    def create_graph_copy_op(self, src: str, target: str, tau: float) -> [tf.Tensor]:
+    def create_graph_copy_op(self, src: str, target: str, tau: float) -> list[tf.Tensor]:
         """
         Creates and returns a TensorFlow Operation that copies the content of all trainable variables from the
         sub-graph in scope `src` to the sub-graph in scope `target`. Both graphs need to have the same topology and
@@ -252,7 +252,7 @@ class ExpDoubleDuelQPlayer(Player):
 
         buffer.add([self.board_position_log[game_length - 1], self.action_log[game_length - 1], None, reward])
 
-    def get_probs(self, input_pos: [np.ndarray], network: QNetwork) -> ([float], [float]):
+    def get_probs(self, input_pos: list[np.ndarray], network: QNetwork) -> tuple[float, float]:
         """
         Feeds the feature vectors `input_pos` (which encode a board states) into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).
@@ -264,7 +264,7 @@ class ExpDoubleDuelQPlayer(Player):
                                                 feed_dict={network.input_positions: input_pos})
         return probs, qvalues
 
-    def get_valid_probs(self, input_pos: [np.ndarray], network: QNetwork, boards: [Board]) -> ([float], [float]):
+    def get_valid_probs(self, input_pos: list[np.ndarray], network: QNetwork, boards: list[Board]) -> tuple[float, float]:
         """
         Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
         by setting the probability of all illegal moves in the current position to -1.
@@ -290,7 +290,7 @@ class ExpDoubleDuelQPlayer(Player):
 
         return probabilities, qvals
 
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
         Implements the Player interface and makes a move on Board `board`
         :param board: The Board to make a move on

@@ -116,7 +116,7 @@ class ReplayBuffer:
         self.buffer = []
         self.buffer_size = buffer_size
 
-    def add(self, experience: []):
+    def add(self, experience: list):
         """
         Adds a list of experience Tuples to the buffer. If this operation causes the buffer to be longer than its
         defined maximum, old entries will be evicted until the maximum length is achieved. Entries are added and
@@ -127,7 +127,7 @@ class ReplayBuffer:
             self.buffer[0:1] = []
         self.buffer.append(experience)
 
-    def sample(self, size) -> []:
+    def sample(self, size) -> list:
         """
         Returns a random sample of `size` entries from the Replay Buffer. If there are less than `size` entries
         in the buffer, all entries will be returned.
@@ -210,7 +210,7 @@ class DirectPolicyAgent(Player):
         self.board_position_log = []
         self.action_log = []
 
-    def get_probs(self, input_pos: [np.ndarray]) -> ([float], [float]):
+    def get_probs(self, input_pos: list[np.ndarray]) -> tuple[float, float]:
         """
         Compute action probabilities through the Neural Network
         :param input_pos: List of input states for which to compute probabilities
@@ -220,7 +220,7 @@ class DirectPolicyAgent(Player):
                                                feed_dict={self.nn.state_in: input_pos})
         return probs, logits
 
-    def get_valid_probs(self, input_pos: [np.ndarray], boards: [Board]) -> ([float], [float]):
+    def get_valid_probs(self, input_pos: list[np.ndarray], boards: list[Board]) -> tuple[float, float]:
         """
         Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
         by setting the probability of all illegal moves in the current position to 0.
@@ -244,7 +244,7 @@ class DirectPolicyAgent(Player):
         res = probabilities / probabilities.sum(axis=1, keepdims=True)
         return res
 
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
         Makes a move on the given input state
         :param board: The current state of the game
@@ -278,7 +278,7 @@ class DirectPolicyAgent(Player):
 
         return res, finished
 
-    def add_game_to_replay_buffer(self, final_reward: float, rewards: []):
+    def add_game_to_replay_buffer(self, final_reward: float, rewards: list):
         """
         Adds the game history of the current game to the replay buffer. This method is called internally
         after the game has finished
@@ -297,7 +297,7 @@ class DirectPolicyAgent(Player):
         for i in range(game_length):
             buffer.add([self.board_position_log[i], self.action_log[i], rewards[i]])
 
-    def calculate_rewards(self, final_reward: float, length: int) -> [float]:
+    def calculate_rewards(self, final_reward: float, length: int) -> list[float]:
         """
         Computes and returns the discounted rewards for all moves
         :param final_reward: The reward of the final move of the game
