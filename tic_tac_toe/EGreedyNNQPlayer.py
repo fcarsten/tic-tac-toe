@@ -146,7 +146,7 @@ class EGreedyNNQPlayer(Player):
 
         return targets
 
-    def get_probs(self, input_pos: np.ndarray) -> tuple[float, float]:
+    def get_probs(self, input_pos: np.ndarray) -> tuple[list[float], list[float]]:
         """
         Feeds the feature vector `input_pos` which encodes a board state into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).

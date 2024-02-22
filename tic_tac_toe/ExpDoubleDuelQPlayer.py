@@ -252,7 +252,7 @@ class ExpDoubleDuelQPlayer(Player):
 
         buffer.add([self.board_position_log[game_length - 1], self.action_log[game_length - 1], None, reward])
 
-    def get_probs(self, input_pos: list[np.ndarray], network: QNetwork) -> tuple[float, float]:
+    def get_probs(self, input_pos: list[np.ndarray], network: QNetwork) -> tuple[list[float], list[float]]:
         """
         Feeds the feature vectors `input_pos` (which encode a board states) into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).
@@ -264,7 +264,7 @@ class ExpDoubleDuelQPlayer(Player):
                                                 feed_dict={network.input_positions: input_pos})
         return probs, qvalues
 
-    def get_valid_probs(self, input_pos: list[np.ndarray], network: QNetwork, boards: list[Board]) -> tuple[float, float]:
+    def get_valid_probs(self, input_pos: list[np.ndarray], network: QNetwork, boards: list[Board]) -> tuple[list[float], list[float]]:
         """
         Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
         by setting the probability of all illegal moves in the current position to -1.
