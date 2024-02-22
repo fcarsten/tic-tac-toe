@@ -210,7 +210,7 @@ class DirectPolicyAgent(Player):
         self.board_position_log = []
         self.action_log = []
 
-    def get_probs(self, input_pos: list[np.ndarray]) -> tuple[float, float]:
+    def get_probs(self, input_pos: list[np.ndarray]) -> tuple[list[float], list[float]]:
         """
         Compute action probabilities through the Neural Network
         :param input_pos: List of input states for which to compute probabilities
@@ -220,7 +220,7 @@ class DirectPolicyAgent(Player):
                                                feed_dict={self.nn.state_in: input_pos})
         return probs, logits
 
-    def get_valid_probs(self, input_pos: list[np.ndarray], boards: list[Board]) -> tuple[float, float]:
+    def get_valid_probs(self, input_pos: list[np.ndarray], boards: list[Board]) -> tuple[list[float], list[float]]:
         """
         Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
         by setting the probability of all illegal moves in the current position to 0.
