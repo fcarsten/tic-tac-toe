@@ -5,6 +5,7 @@
 #
 
 import numpy as np
+from numpy.typing import NDArray
 import random
 import tensorflow as tf
 
@@ -57,6 +58,26 @@ class QNetwork:
 
         self.build_graph(name)
 
+    def add_conv2d(self, input_tensor: tf.Tensor, filters=128, kernel_size=3,
+                                   kernel_regularizer=tf.keras.regularizers.L1L2(),
+                                   data_format="channels_last", padding='SAME', activation=tf.nn.relu):
+        """
+        Adds a 2D Convolutional Neural Net layer to network input_tensor
+        :param input_tensor: The layer to which we should add the new layer
+        :param filters: The number of filters in the convolutional layer
+        :param kernel_size: The size of the convolutional kernel
+        :param kernel_regularizer: The regularizer for the kernel weights
+        :param data_format: The data format, either "channels_last" or "channels_first"
+        :param padding: The padding method, either 'SAME' or 'VALID'
+        :param activation: The activation function for the new layer, or None if no activation function
+        should be used
+        :return: A new 2D Convolutional layer attached to the `input_tensor`
+        """
+        layer = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size,data_format=data_format,
+                                       kernel_regularizer= kernel_regularizer,
+                                       padding=padding, activation=activation)
+        return layer(input_tensor)
+
     def add_dense_layer(self, input_tensor: tf.Tensor, output_size: int, activation_fn=None,
                         name: str = None) -> tf.Tensor:
         """
@@ -68,10 +89,11 @@ class QNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.keras.initializers.VarianceScaling(),
-                               kernel_regularizer=tf.keras.regularizers.L1L2(),
-                               name=name)
+        initializer = tf.keras.initializers.VarianceScaling()
+        kernel_regularizer = tf.keras.regularizers.L1L2()
+        layer = tf.keras.layers.Dense(output_size, activation=activation_fn,
+                                      kernel_initializer=initializer, kernel_regularizer= kernel_regularizer, name=name)
+        return layer(input_tensor)
 
     def build_graph(self, name: str):
         """
@@ -83,17 +105,17 @@ class QNetwork:
             self.target_q = tf.compat.v1.placeholder(shape=[None], dtype=tf.float32, name='target')
             net = self.input_positions
 
-            net = tf.compat.v1.layers.conv2d(inputs=net, filters=128, kernel_size=3,
+            net = self.add_conv2d(net, filters=128, kernel_size=3,
                                    kernel_regularizer=tf.keras.regularizers.L1L2(),
                                    data_format="channels_last", padding='SAME', activation=tf.nn.relu)
-            net = tf.compat.v1.layers.conv2d(inputs=net, filters=128, kernel_size=3,
+            net = self.add_conv2d(net, filters=128, kernel_size=3,
                                    kernel_regularizer=tf.keras.regularizers.L1L2(),
                                    data_format="channels_last", padding='SAME', activation=tf.nn.relu)
-            net = tf.compat.v1.layers.conv2d(inputs=net, filters=64, kernel_size=3,
+            net = self.add_conv2d(net, filters=64, kernel_size=3,
                                    kernel_regularizer=tf.keras.regularizers.L1L2(),
                                    data_format="channels_last", padding='SAME', activation=tf.nn.relu)
 
-            net = tf.compat.v1.layers.flatten(net)
+            net = tf.keras.layers.Flatten()(net)
 
             net = self.add_dense_layer(net, BOARD_SIZE * 3 * 9, tf.nn.relu)
 
@@ -289,7 +311,7 @@ class DeepExpDoubleDuelQPlayer(Player):
 
         buffer.add([self.board_position_log[game_length - 1], self.action_log[game_length - 1], None, reward])
 
-    def get_probs(self, input_pos: list[np.ndarray], network: QNetwork) -> tuple[float, float]:
+    def get_probs(self, input_pos: list[np.ndarray], network: QNetwork) -> tuple[NDArray[float], NDArray[float]]:
         """
         Feeds the feature vectors `input_pos` (which encode a board states) into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).
@@ -301,7 +323,8 @@ class DeepExpDoubleDuelQPlayer(Player):
                                                 feed_dict={network.input_positions: input_pos})
         return probs, qvalues
 
-    def get_valid_probs(self, input_pos: list[np.ndarray], network: QNetwork, boards: list[Board]) -> tuple[float, float]:
+    def get_valid_probs(self, input_pos: list[np.ndarray], network: QNetwork,
+                        boards: list[Board]) -> tuple[NDArray[float], NDArray[float]]:
         """
         Evaluates the board positions `input_pos` with the Neural Network `network`. It post-processes the result
         by setting the probability of all illegal moves in the current position to -1.

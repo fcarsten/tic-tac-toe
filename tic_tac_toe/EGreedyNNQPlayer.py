@@ -43,9 +43,11 @@ class QNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
-                               name=name)
+        initializer = tf.keras.initializers.VarianceScaling()
+        kernel_regularizer = tf.keras.regularizers.L1L2()
+        layer = tf.keras.layers.Dense(output_size, activation=activation_fn,
+                                      kernel_initializer=initializer, kernel_regularizer= kernel_regularizer, name=name)
+        return layer(input_tensor)
 
     def build_graph(self, name: str):
         """
