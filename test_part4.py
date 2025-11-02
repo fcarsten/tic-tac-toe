@@ -41,8 +41,8 @@ nnplayer = NNQPlayer("QLearner1", learning_rate=0.01, win_value=100.0, loss_valu
 mm_player = MinMaxAgent()
 rndplayer = RandomPlayer()
 
-game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nnplayer, num_battles=10000)  # , num_battles = 20)
-# game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, mm_player) #, num_battles = 20)
+# game_number, p1_wins, p2_wins, draws = evaluate_players(mm_player, nnplayer, num_battles=10000)  # , num_battles = 20)
+game_number, p1_wins, p2_wins, draws = evaluate_players(nnplayer, rndplayer) #, num_battles = 20)
 
 p = plt.plot(game_number, draws, 'r-', game_number, p1_wins, 'g-', game_number, p2_wins, 'b-')
 

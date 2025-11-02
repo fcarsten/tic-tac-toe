@@ -19,7 +19,7 @@ class Player(ABC):
         super().__init__()
 
     @abstractmethod
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
         The player should make a move on board `board` and return the result. The return result can usually
         be passed on from the corresponding method in the board class.

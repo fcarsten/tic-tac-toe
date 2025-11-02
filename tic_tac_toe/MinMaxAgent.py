@@ -49,7 +49,7 @@ class MinMaxAgent(Player):
         """
         pass
 
-    def _min(self, board: Board) -> (float, int):
+    def _min(self, board: Board) -> tuple[float, int]:
         """
         Evaluate the board position `board` from the Minimizing player's point of view.
 
@@ -100,7 +100,7 @@ class MinMaxAgent(Player):
                 self.cache[board_hash] = (min_value, action)
         return min_value, action
 
-    def _max(self, board: Board) -> (float, int):
+    def _max(self, board: Board) -> tuple[float, int]:
         """
         Evaluate the board position `board` from the Maximizing player's point of view.
 
@@ -151,7 +151,7 @@ class MinMaxAgent(Player):
                 self.cache[board_hash] = (max_value, action)
         return max_value, action
 
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
         Making a move according to the MinMax algorithm
 

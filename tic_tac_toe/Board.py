@@ -90,7 +90,7 @@ class Board:
         else:
             self.state = s.copy()
 
-    def coord_to_pos(self, coord: (int, int)) -> int:
+    def coord_to_pos(self, coord: tuple[int, int]) -> int:
         """
         Converts a 2D board position to a 1D board position.
         Various parts of code prefer one over the other.
@@ -99,7 +99,7 @@ class Board:
         """
         return coord[0] * BOARD_DIM + coord[1]
 
-    def pos_to_coord(self, pos: int) -> (int, int):
+    def pos_to_coord(self, pos: int) -> tuple[int, int]:
         """
         Converts a 1D board position to a 2D board position.
         Various parts of code prefer one over the other.
@@ -142,7 +142,7 @@ class Board:
         """
         return (0 <= pos < BOARD_SIZE) and (self.state[pos] == EMPTY)
 
-    def move(self, position: int, side: int) -> (np.ndarray, GameResult, bool):
+    def move(self, position: int, side: int) -> tuple[np.ndarray, GameResult, bool]:
         """
         Places a piece of side "side" at position "position". The position is to be provided as 1D.
         Throws a ValueError if the position is not EMPTY
@@ -166,7 +166,7 @@ class Board:
 
         return self.state, GameResult.NOT_FINISHED, False
 
-    def apply_dir(self, pos: int, direction: (int, int)) -> int:
+    def apply_dir(self, pos: int, direction: tuple[int, int]) -> int:
         """
         Applies 2D direction dir to 1D position pos.
         Returns the resulting 1D position, or -1 if the resulting position would not be a valid board position.
@@ -186,7 +186,7 @@ class Board:
 
         return row * 3 + col
 
-    def check_win_in_dir(self, pos: int, direction: (int, int)) -> bool:
+    def check_win_in_dir(self, pos: int, direction: tuple[int, int]) -> bool:
         """
         Checks and returns whether there are 3 pieces of the same side in a row if following direction dir
         Used internally to check whether either side has won the game.

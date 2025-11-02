@@ -52,7 +52,7 @@ class RndMinMaxAgent(Player):
         """
         pass
 
-    def _min(self, board: Board) -> int:
+    def _min(self, board: Board) -> tuple[float, int]:
         """
         Evaluate the board position `board` from the Minimizing player's point of view.
 
@@ -103,7 +103,7 @@ class RndMinMaxAgent(Player):
 
         return random.choice(best_moves)
 
-    def _max(self, board: Board) -> int:
+    def _max(self, board: Board) -> tuple[float, int]:
         """
         Evaluate the board position `board` from the Maximizing player's point of view.
 
@@ -153,7 +153,7 @@ class RndMinMaxAgent(Player):
 
         return random.choice(best_moves)
 
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
 
         Making a move according to the MinMax algorithm. If more than one best move exist, chooses amongst them

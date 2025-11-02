@@ -19,7 +19,7 @@ class RandomPlayer(Player):
         self.side = None
         super().__init__()
 
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
         Making a random move
         :param board: The board to make a move on

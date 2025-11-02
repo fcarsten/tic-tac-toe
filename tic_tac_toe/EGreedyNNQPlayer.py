@@ -43,9 +43,11 @@ class QNetwork:
         :param name: The optional name of the layer. Useful for saving a loading a TensorFlow graph
         :return: A new dense layer attached to the `input_tensor`
         """
-        return tf.compat.v1.layers.dense(input_tensor, output_size, activation=activation_fn,
-                               kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
-                               name=name)
+        initializer = tf.keras.initializers.VarianceScaling()
+        kernel_regularizer = tf.keras.regularizers.L1L2()
+        layer = tf.keras.layers.Dense(output_size, activation=activation_fn,
+                                      kernel_initializer=initializer, kernel_regularizer= kernel_regularizer, name=name)
+        return layer(input_tensor)
 
     def build_graph(self, name: str):
         """
@@ -131,7 +133,7 @@ class EGreedyNNQPlayer(Player):
         self.next_max_log = []
         self.values_log = []
 
-    def calculate_targets(self) -> [np.ndarray]:
+    def calculate_targets(self) -> list[np.ndarray]:
         """
         Based on the recorded moves, compute updated estimates of the Q values for the network to learn
         """
@@ -146,7 +148,7 @@ class EGreedyNNQPlayer(Player):
 
         return targets
 
-    def get_probs(self, input_pos: np.ndarray) -> ([float], [float]):
+    def get_probs(self, input_pos: np.ndarray) -> tuple[list[float], list[float]]:
         """
         Feeds the feature vector `input_pos` which encodes a board state into the Neural Network and computes the
         Q values and corresponding probabilities for all moves (including illegal ones).
@@ -157,7 +159,7 @@ class EGreedyNNQPlayer(Player):
                                                 feed_dict={self.nn.input_positions: [input_pos]})
         return probs[0], qvalues[0]
 
-    def move(self, board: Board) -> (GameResult, bool):
+    def move(self, board: Board) -> tuple[GameResult, bool]:
         """
         Implements the Player interface and makes a move on Board `board`
         :param board: The Board to make a move on

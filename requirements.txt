@@ -1,6 +1,6 @@
-ipython>=5.0.0
-matplotlib>=2.2.2
-numpy>=1.14.3
-tensorboard>=2.0.0
-tensorflow>=2.0.0
-jupyter>=1.0.0
+ipython>=9.6.0
+matplotlib>=3.10.7
+numpy>=2.3.4
+tensorboard>=2.20.0
+tensorflow>=2.20.0
+jupyter>=1.1.1
